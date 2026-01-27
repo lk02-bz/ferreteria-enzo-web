@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Cuenta - Ferretería Enzo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+    
+    <header class="main-header">
+        <div class="container header-content">
+            <button class="menu-toggle" id="mobile-menu-btn"><span class="material-icons">menu</span></button>
+            <div class="logo">FERRETERÍA <span class="text-orange">ENZO</span></div>
+            <nav class="main-nav" id="main-nav">
+                <ul>
+                    <li><a href="index.html">Inicio</a></li>
+                    <li><a href="productos.html">Productos</a></li>
+                    <li><a href="index.html#ofertas">Ofertas</a></li>
+                    <li><a href="#contacto">Contacto</a></li>
+                </ul>
+            </nav>
+            <div class="search-container">
+                <form class="search-bar" id="search-form">
+                    <input type="text" id="search-input" placeholder="¿Qué buscas? (ej: taladro, makita...)" autocomplete="off">
+                    <button type="submit" class="search-btn">
+                        <span class="material-icons">search</span>
+                    </button>
+                </form>
+                <div class="search-results" id="search-results"></div>
+            </div>
+            <div class="user-actions">
+                <div class="cart-icon">
+                    <span class="material-icons">shopping_cart</span>
+                    <span class="badge">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="auth-container">
+        <div class="auth-wrapper">
+            
+            <div class="auth-box" id="login-box">
+                <h2>¡Hola de nuevo! 👋</h2>
+                <p>Ingresá tus datos para continuar</p>
+                
+                <form id="form-login">
+                    <div class="input-group">
+                        <span class="material-icons">email</span>
+                        <input type="email" placeholder="Tu Email" required>
+                    </div>
+                    <div class="input-group">
+                        <span class="material-icons">lock</span>
+                        <input type="password" placeholder="Tu Contraseña" required>
+                    </div>
+                    
+                    <a href="#" class="forgot-pass">¿Olvidaste tu contraseña?</a>
+                    
+                    <button type="submit" class="btn-auth">INGRESAR</button>
+                </form>
+
+                <div class="auth-switch">
+                    <p>¿No tenés cuenta? <a href="#" id="show-register">Crear cuenta</a></p>
+                </div>
+            </div>
+
+            <div class="auth-box hidden" id="register-box">
+                <h2>Crear Cuenta 🚀</h2>
+                <p>Completá tus datos para empezar</p>
+                
+                <form id="form-register">
+                    <div class="input-group">
+                        <span class="material-icons">person</span>
+                        <input type="text" placeholder="Nombre Completo" required>
+                    </div>
+                    <div class="input-group">
+                        <span class="material-icons">email</span>
+                        <input type="email" placeholder="Email" required>
+                    </div>
+                    <div class="input-group">
+                        <span class="material-icons">lock</span>
+                        <input type="password" placeholder="Contraseña" required>
+                    </div>
+                    <div class="input-group">
+                        <span class="material-icons">lock</span>
+                        <input type="password" placeholder="Repetir Contraseña" required>
+                    </div>
+                    
+                    <button type="submit" class="btn-auth">REGISTRARME</button>
+                </form>
+
+                <div class="auth-switch">
+                    <p>¿Ya tenés cuenta? <a href="#" id="show-login">Iniciar Sesión</a></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h3>Tu Carrito <span id="cart-count-header">(0)</span></h3>
+            <button class="close-cart-btn" id="close-cart-btn"><span class="material-icons">close</span></button>
+        </div>
+        <div class="cart-items" id="cart-items-container"></div>
+        <div class="cart-footer">
+            <div class="cart-total"><span>Total:</span><span id="cart-total-price">$0</span></div>
+            <button class="btn-checkout">INICIAR COMPRA</button>
+            <button class="btn-clear" id="btn-clear-cart">Vaciar Carrito</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast-notification">
+        <span class="material-icons">check_circle</span>
+        <span id="toast-message">Mensaje</span>
+    </div>
+
+    <script src="script.js"></script>
+    
+    <script>
+        // Lógica simple para cambiar entre login y registro visualmente
+        const loginBox = document.getElementById('login-box');
+        const registerBox = document.getElementById('register-box');
+        const showRegisterBtn = document.getElementById('show-register');
+        const showLoginBtn = document.getElementById('show-login');
+
+        // Ir al registro
+        showRegisterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginBox.classList.add('hidden');
+            registerBox.classList.remove('hidden');
+        });
+
+        // Ir al login
+        showLoginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            registerBox.classList.add('hidden');
+            loginBox.classList.remove('hidden');
+        });
+
+        // Simulación de Login (Frontend Puro)
+        document.getElementById('form-login').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Aquí iría la conexión con Backend. Por ahora simulamos:
+            
+            // 1. Guardamos una "bandera" en la memoria
+            localStorage.setItem('usuarioLogueado', 'true');
+            localStorage.setItem('nombreUsuario', 'Enzo'); // Simulado
+
+            // 2. Mostramos éxito
+            mostrarNotificacion("¡Bienvenido Enzo!");
+
+            // 3. Redirigimos al inicio después de 1.5 seg
+            setTimeout(() => {
+                window.location.href = "index.html";
+            }, 1500);
+        });
+    </script>
+</body>
+</html>

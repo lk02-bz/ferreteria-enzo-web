@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferretería Enzo - Tu aliado en construcción</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+    
+    <header class="main-header">
+        <div class="container header-content">
+            
+            <button class="menu-toggle" id="mobile-menu-btn">
+                <span class="material-icons">menu</span>
+            </button>
+
+            <div class="logo">
+                FERRETERÍA <span class="text-orange">ENZO</span>
+            </div>
+
+            <nav class="main-nav" id="main-nav">
+                <ul>
+                    <li><a href="index.html">Inicio</a></li>
+                    <li><a href="productos.html">Productos</a></li>
+                    <li><a href="#ofertas">Ofertas</a></li>
+                    <li><a href="#contacto">Contacto</a></li>
+                    <li class="mobile-only"><a href="#">Mi Cuenta</a></li>
+                </ul>
+            </nav>
+            
+           <div class="search-container">
+                <form class="search-bar" id="search-form">
+                    <input type="text" id="search-input" placeholder="¿Qué buscas? (ej: taladro, makita...)" autocomplete="off">
+                    <button type="submit" class="search-btn">
+                        <span class="material-icons">search</span>
+                    </button>
+                </form>
+                <div class="search-results" id="search-results"></div>
+            </div>
+
+            <div class="user-actions">
+                <button class="btn-outline desktop-only">Cuenta</button>
+                <div class="cart-icon">
+                    <span class="material-icons">shopping_cart</span>
+                    <span class="badge">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <header class="hero-banner">
+        <div class="hero-content">
+            <h1>Construye con confianza</h1>
+            <p>Las mejores herramientas para profesionales y el hogar al mejor precio.</p>
+            <a href="#ofertas" class="btn-hero">Ver Ofertas</a>
+        </div>
+    </header>
+
+    <section class="categories container">
+        
+        <a href="productos.html?category=electricas" class="category-item">
+            <div class="circle-img"><img src="./Productos en stoks/Herramientas Electricas.jpg" alt="Herramientas"></div>
+            <p>HERRAMIENTAS</p>
+        </a>
+
+        <a href="productos.html?category=pinturas" class="category-item">
+            <div class="circle-img"><img src="./Productos en stoks/Pintura.jpg" alt="Pinturas"></div>
+            <p>PINTURAS</p>
+        </a>
+
+        <a href="productos.html?category=plomeria" class="category-item">
+            <div class="circle-img"><img src="./Productos en stoks/PLOMERIA.jpg" alt="Plomería"></div>
+            <p>PLOMERÍA</p>
+        </a>
+
+        <a href="productos.html?category=buloneria" class="category-item">
+            <div class="circle-img"><img src="./Productos en stoks/Buloneria.jpg" alt="Bulonería"></div>
+            <p>BULONERÍA</p>
+        </a>
+
+        <a href="productos.html?category=bazar" class="category-item">
+            <div class="circle-img"><img src="./Productos en stoks/Cocina.webp" alt="Cocina"></div>
+            <p>BAZAR</p>
+        </a>
+        
+        <a href="productos.html?category=electricidad" class="category-item">
+            <div class="circle-img"><img src="./Productos en stoks/Electricidad.jpg" alt="Electricidad"></div>
+            <p>ELECTRICIDAD</p>
+        </a>
+    </section>
+
+    <section class="products-section container" id="ofertas">
+        <div class="section-title">
+            <h2>Ofertas de la Semana</h2>
+            <div class="divider"></div>
+        </div>
+
+        <div class="product-grid" id="contenedor-ofertas">
+            </div>
+        
+        <div class="view-more-container">
+            <a href="productos.html?filter=ofertas" class="btn-view-more">
+                VER MÁS OFERTAS <span class="material-icons" style="font-size: 1.2rem;">arrow_forward</span>
+            </a>
+        </div>
+    </section>
+
+    <section class="trust-section">
+        <div class="container-trust">
+            
+            <div class="trust-info">
+                <h2>Más que una ferretería, somos tus aliados</h2>
+                <p>
+                    En cada proyecto, grande o pequeño, necesitas herramientas que no fallen. 
+                    Seleccionamos nuestro catálogo pensando en la durabilidad y el rendimiento 
+                    profesional que tu trabajo exige.
+                </p>
+                <div class="trust-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">+20</span>
+                        <span class="stat-label">Años de experiencia</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">100%</span>
+                        <span class="stat-label">Garantía Real</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="boss-card">
+                <div class="boss-image-container">
+                    <img src="./jefe.jpg" alt="Foto del Dueño" class="boss-img">
+                </div>
+                <div class="boss-content">
+                    <h3>Carlos Gómez</h3> 
+                    <span class="boss-role">Fundador & Especialista Técnico</span>
+                    <blockquote class="boss-quote">
+                        "Mi compromiso es que no solo te lleves una herramienta, sino la solución exacta 
+                        para el problema que tienes hoy. Si no te sirve, no te lo vendemos."
+                    </blockquote>
+                    <button class="contact-boss-btn">Consultar a Carlos</button>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+   <section class="services-info container">
+        <div class="service-card" id="card-envios" style="cursor: pointer;">
+            <div class="icon-box">
+                <span class="material-icons">local_shipping</span>
+            </div>
+            <h3>Envíos a Domicilio</h3>
+            <p>Recibí tus herramientas en el día. Gratis en compras superiores a $50.000.</p>
+        </div>
+
+        <div class="service-card" id="card-pagos" style="cursor: pointer;">
+            <div class="icon-box">
+                <span class="material-icons">credit_card</span>
+            </div>
+            <h3>Medios de Pago</h3>
+            <p>3 y 6 Cuotas sin interés con todas las tarjetas bancarias.</p>
+        </div>
+
+        <div class="service-card" id="card-asesoramiento" style="cursor: pointer;">
+            <div class="icon-box">
+                <span class="material-icons">support_agent</span>
+            </div>
+            <h3>Asesoramiento Técnico</h3>
+            <p>¿Dudas con tu obra? Nuestro equipo de expertos te ayuda por WhatsApp.</p>
+        </div>
+    </section>
+
+    <section class="wholesale-banner">
+        <div class="container banner-content">
+            <div class="banner-text">
+                <h2>¿SOS CONSTRUCTOR O ARQUITECTO?</h2>
+                <p>Accedé a precios mayoristas y cuenta corriente para tus obras.</p>
+            </div>
+            <button class="btn-banner">SOLICITAR ALTA</button>
+        </div>
+    </section>
+
+    <section class="newsletter-section">
+        <div class="container newsletter-content">
+            <div class="news-text">
+                <h3>RECIBÍ NUESTRAS NOVEDADES</h3>
+                <p>Enterate antes que nadie de las ofertas y nuevos ingresos.</p>
+            </div>
+            <form class="news-form">
+                <input type="email" placeholder="Ingresá tu email..." required>
+                <button type="submit">SUSCRIBIRME</button>
+            </form>
+        </div>
+    </section>
+
+    <footer class="main-footer" id="contacto">
+        <div class="container footer-grid">
+            
+            <div class="footer-col">
+                <h4>FERRETERÍA <span class="text-orange">ENZO</span></h4>
+                <p>Tu aliado en construcción desde 2010. Herramientas de calidad profesional para grandes proyectos y arreglos del hogar.</p>
+            </div>
+
+            <div class="footer-col">
+                <h4>CONTACTO</h4>
+                <ul class="footer-links">
+                    <li><span class="material-icons">location_on</span> Av. Las Heras 1234, Misiones</li>
+                    <li><span class="material-icons">phone</span> +54 3755 123456</li>
+                    <li><span class="material-icons">email</span> ventas@ferreteriaenzo.com</li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>SECCIONES</h4>
+                <ul class="footer-links">
+                    <li><a href="productos.html">Herramientas Eléctricas</a></li>
+                    <li><a href="#">Pinturas</a></li>
+                    <li><a href="#ofertas">Ofertas</a></li>
+                    <li><a href="#contacto">Contacto</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Ferretería Enzo. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <div class="modal-overlay" id="modal-overlay"></div>
+
+    <div class="modal-window" id="modal-envios">
+        <div class="modal-header">
+            <h3><span class="material-icons">local_shipping</span> Envíos y Zonas</h3>
+            <button class="modal-close" onclick="cerrarModals()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <h4>🚚 Envíos en el día (Moto/Flete)</h4>
+            <ul class="modal-list">
+                <li><strong>Wanda / Esperanza:</strong> Gratis (Compras > $20.000)</li>
+                <li><strong>Libertad / Iguazú:</strong> $3.500 (Flete propio)</li>
+                <li><strong>Otras zonas:</strong> Consultar costo por KM.</li>
+            </ul>
+            <hr class="modal-divider">
+            <h4>📦 Envíos al Interior (Correo)</h4>
+            <p>Despachamos por <strong>Vía Cargo</strong> o <strong>Correo Argentino</strong> a todo el país. El costo de envío se abona al recibir el paquete.</p>
+            <div class="alert-box">
+                <span class="material-icons">info</span>
+                <p>Compras mayores a <strong>$50.000</strong> tienen envío bonificado en Misiones.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-window" id="modal-pagos">
+        <div class="modal-header">
+            <h3><span class="material-icons">credit_card</span> Medios de Pago</h3>
+            <button class="modal-close" onclick="cerrarModals()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <h4>💳 Tarjetas de Crédito / Débito</h4>
+            <div class="payment-icons">
+                <img src="https://img.icons8.com/color/48/visa.png" alt="Visa">
+                <img src="https://img.icons8.com/color/48/mastercard.png" alt="Mastercard">
+                <img src="https://img.icons8.com/color/48/mercado-pago.png" alt="Mercado Pago">
+            </div>
+            <ul class="modal-list">
+                <li><strong>1 Pago:</strong> Sin interés (Precio de lista).</li>
+                <li><strong>3 Cuotas Fijas:</strong> 15% de recargo.</li>
+                <li><strong>6 Cuotas Fijas:</strong> 30% de recargo.</li>
+            </ul>
+            <hr class="modal-divider">
+            <h4>💵 Efectivo / Transferencia</h4>
+            <p>Obtené un <strong>10% DE DESCUENTO EXTRA</strong> pagando en efectivo en el local o vía transferencia bancaria.</p>
+            <div class="bank-info">
+                <p><strong>Alias:</strong> FERRETERIA.ENZO</p>
+                <p><strong>CBU:</strong> 0000003456789</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="cart-overlay" id="cart-overlay"></div>
+
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h3>Tu Carrito <span id="cart-count-header">(0)</span></h3>
+            <button class="close-cart-btn" id="close-cart-btn">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+
+        <div class="cart-items" id="cart-items-container">
+            <p style="padding: 20px; text-align: center;">Tu carrito está vacío</p>
+        </div>
+
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cart-total-price">$0</span>
+            </div>
+            <button class="btn-checkout">INICIAR COMPRA</button>
+            <button class="btn-clear" id="btn-clear-cart">Vaciar Carrito</button>
+        </div>
+    </div>
+    <div id="toast" class="toast-notification">
+        <span class="material-icons">check_circle</span>
+        <span id="toast-message">Producto agregado</span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

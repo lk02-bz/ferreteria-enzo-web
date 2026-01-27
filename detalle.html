@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del Producto - Ferretería Enzo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+    
+    <header class="main-header">
+        <div class="container header-content">
+            <button class="menu-toggle" id="mobile-menu-btn"><span class="material-icons">menu</span></button>
+            <div class="logo">FERRETERÍA <span class="text-orange">ENZO</span></div>
+            <nav class="main-nav" id="main-nav">
+                <ul>
+                    <li><a href="index.html">Inicio</a></li>
+                    <li><a href="productos.html">Productos</a></li>
+                    <li><a href="index.html#ofertas">Ofertas</a></li>
+                    <li><a href="#contacto">Contacto</a></li>
+                    <li class="mobile-only"><a href="#">Mi Cuenta</a></li>
+                </ul>
+            </nav>
+            <div class="search-container">
+                <form class="search-bar" id="search-form">
+                    <input type="text" id="search-input" placeholder="¿Qué buscas? (ej: taladro, makita...)" autocomplete="off">
+                    <button type="submit" class="search-btn">
+                        <span class="material-icons">search</span>
+                    </button>
+                </form>
+                <div class="search-results" id="search-results"></div>
+            </div>
+            <div class="user-actions">
+                <button class="btn-outline desktop-only">Cuenta</button>
+                <div class="cart-icon"><span class="material-icons">shopping_cart</span><span class="badge">0</span></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container detail-wrapper">
+        
+        <div class="product-detail-card" id="detail-container">
+            
+            <a href="productos.html" class="back-btn-floating">
+                <span class="material-icons">arrow_back</span> 
+                <span class="btn-text">Volver al catálogo</span>
+            </a>
+
+            <div class="detail-left">
+                <div class="main-image-container">
+                    <img id="detail-image" src="" alt="Cargando imagen...">
+                </div>
+            </div>
+
+            <div class="detail-right">
+                
+                <span class="detail-brand" id="detail-brand">MARCA</span>
+                <h1 class="detail-title" id="detail-name">Nombre del Producto</h1>
+                
+                <div class="detail-price">
+                    <span id="detail-price">---</span>
+                    <span class="offer-tag" id="offer-tag" style="display:none;">OFERTA</span>
+                </div>
+
+                <p class="detail-desc" id="detail-desc">
+                    Descripción del producto...
+                </p>
+
+                <div id="specs-container">
+                    </div>
+
+                <div class="detail-actions">
+                    <div class="quantity-selector big-selector">
+                        <button>-</button>
+                        <input type="text" value="1" readonly>
+                        <button>+</button>
+                    </div>
+                    <button class="add-btn big-btn" id="detail-add-btn">AGREGAR AL CARRITO</button>
+                </div>
+
+                <div class="detail-meta" style="margin-top: 20px;">
+                    <p><span class="material-icons">verified</span> Garantía Oficial</p>
+                    <p><span class="material-icons">local_shipping</span> Envío Gratis > $50.000</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+ <footer class="main-footer" id="contacto">
+        <div class="container footer-grid">
+            
+            <div class="footer-col">
+                <h4>FERRETERÍA <span class="text-orange">ENZO</span></h4>
+                <p>Tu aliado en construcción desde 2010. Herramientas de calidad profesional para grandes proyectos y arreglos del hogar.</p>
+            </div>
+
+            <div class="footer-col">
+                <h4>CONTACTO</h4>
+                <ul class="footer-links">
+                    <li><span class="material-icons">location_on</span> Av. Las Heras 1234, Misiones</li>
+                    <li><span class="material-icons">phone</span> +54 3755 123456</li>
+                    <li><span class="material-icons">email</span> ventas@ferreteriaenzo.com</li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>SECCIONES</h4>
+                <ul class="footer-links">
+                    <li><a href="productos.html">Herramientas Eléctricas</a></li>
+                    <li><a href="#">Pinturas</a></li>
+                    <li><a href="#ofertas">Ofertas</a></li>
+                    <li><a href="#contacto">Contacto</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Ferretería Enzo. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <div class="cart-overlay" id="cart-overlay"></div>
+
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h3>Tu Carrito <span id="cart-count-header">(0)</span></h3>
+            <button class="close-cart-btn" id="close-cart-btn">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+
+        <div class="cart-items" id="cart-items-container">
+            <p style="padding: 20px; text-align: center;">Tu carrito está vacío</p>
+        </div>
+
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cart-total-price">$0</span>
+            </div>
+            <button class="btn-checkout">INICIAR COMPRA</button>
+            <button class="btn-clear" id="btn-clear-cart">Vaciar Carrito</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast-notification">
+        <span class="material-icons">check_circle</span>
+        <span id="toast-message">Producto agregado</span>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
