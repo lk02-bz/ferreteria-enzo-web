@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<!-- ============================================================
+     HEAD — Metadatos, fuentes y estilos
+     ============================================================ -->
+<head>
+    <!-- Preconnect: Firebase y Google Fonts (mejora velocidad de carga) -->
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración - Ferretería Enzo</title>
+
+    <!-- Hoja de estilos global -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Iconos de Google Material -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./logo-empresa.png">
+
+    <!-- Estilos del panel de administración -->
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<!-- ============================================================
+     BODY
+     ============================================================ -->
+<body>
+
+    <!-- ============================================================
+         PANTALLA DE LOGIN
+         ============================================================ -->
+    <div class="login-screen" id="login-screen">
+        <div class="auth-box" style="max-width: 400px; width: 100%;">
+
+            <!-- Logo -->
+            <div class="logo-container" style=" display:flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 15px;">
+                <div class="logo-box" style="width: 115px; height: 62px; display: flex;">
+                    <img src="./EnzoDistribuidora.png" alt="Distribuciones Enzo">
+                </div>
+                <div class="logo-text" style="font-size: 1.5em; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">ADMINISTRACIÓN</div>
+            </div>
+
+            <!-- Formulario de acceso -->
+            <form id="admin-login-form">
+                <div class="input-group">
+                    <input type="email" id="admin-email" placeholder="Email Administrativo" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="admin-pass" placeholder="Contraseña" required>
+                </div>
+                <button type="submit" class="btn-auth">ENTRAR AL SISTEMA</button>
+                <p id="login-error" style="color: red; text-align: center; margin-top: 10px; display: none;">Error de credenciales</p>
+            </form>
+
+        </div>
+    </div>
+    <!-- FIN login-screen -->
+
+
+    <!-- ============================================================
+         PANTALLA DEL PANEL (DASHBOARD)
+         ============================================================ -->
+    <div class="dashboard-screen" id="dashboard-screen">
+
+        <!-- Barra de Navegación Superior -->
+        <nav class="admin-nav">
+            <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>PANEL DE CONTROL</h3>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <span id="user-email-display" style="font-size: 0.9rem; opacity: 0.8;"></span>
+                    <button onclick="logout()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 15px; border-radius: 20px; cursor: pointer;">Salir</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Contenedor principal del Admin -->
+        <div class="admin-container">
+                           <!-- Grid de tarjetas estadísticas -->
+                    <div id="admin-dashboard-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); border-left: 5px solid #38A169;">
+                        <div style="color: #718096; font-size: 0.9rem; font-weight: bold; text-transform: uppercase;">Ingresos (Completados)</div>
+                        <div id="stat-ingresos" style="font-size: 1.8rem; font-weight: 900; color: #2D3748; margin-top: 5px;">$0</div>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); border-left: 5px solid #DD6B20;">
+                        <div style="color: #718096; font-size: 0.9rem; font-weight: bold; text-transform: uppercase;">Pedidos Pendientes</div>
+                        <div id="stat-pendientes" style="font-size: 1.8rem; font-weight: 900; color: #2D3748; margin-top: 5px;">0</div>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); border-left: 5px solid #3182CE;">
+                        <div style="color: #718096; font-size: 0.9rem; font-weight: bold; text-transform: uppercase;">Total Catálogo</div>
+                        <div id="stat-productos" style="font-size: 1.8rem; font-weight: 900; color: #2D3748; margin-top: 5px;">0</div>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); border-left: 5px solid #E53E3E;">
+                        <div style="color: #718096; font-size: 0.9rem; font-weight: bold; text-transform: uppercase;">Agotados (Sin Stock)</div>
+                        <div id="stat-agotados" style="font-size: 1.8rem; font-weight: 900; color: #E53E3E; margin-top: 5px;">0</div>
+                    </div>
+                </div>
+                <div class="tabs-wrapper" style="margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
+
+                    <!-- Botón tab: Productos -->
+                    <button class="btn-tab active" onclick="mostrarSeccion('productos')">📦 PRODUCTOS</button>
+
+                    <!-- FIN admin-dashboard-stats -->
+                    <button class="btn-tab" onclick="mostrarSeccion('reportes')">
+                        💡 BUZÓN
+                        <span id="badge-reportes" class="badge-counter" style="display:none; background-color: #3182CE;">0</span>
+                    </button>
+                    <!-- Botón tab: Pedidos -->
+                    <button class="btn-tab" onclick="mostrarSeccion('pedidos')">
+                        📄 PEDIDOS RECIBIDOS
+                        <span id="badge-pedidos" class="badge-counter" style="display:none;">0</span>
+                    </button>
+
+                    <!-- Botón tab: Usuarios -->
+                    <button class="btn-tab" onclick="mostrarSeccion('usuarios')">
+                        👥 USUARIOS
+                        <span id="badge-solicitudes" class="badge-counter" style="display:none; background-color:#E53E3E;">0</span>
+                    </button>
+
+                </div>
+            <!-- --------------------------------------------------------
+                 Pestañas de Navegación + Stats del Dashboard
+            -------------------------------------------------------- -->
+
+            <!-- FIN bloque de pestañas -->
+            <div id="seccion-reportes" style="display: none;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-left: 5px solid #D69E2E; padding-left: 15px;">
+                    <h2 style="margin: 0; color: var(--text-dark); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons" style="color: #D69E2E;">lightbulb</span>
+                        Bandeja de Entrada (Buzón)
+                    </h2>
+                    <p style="margin: 0; color: var(--text-light); font-size: 0.9rem;">
+                        Lee las opiniones, ideas y reportes de fallos de tus clientes.
+                    </p>
+                </div>
+
+                <div class="table-container" style="overflow-x: auto;">
+                    <table class="admin-table" style="min-width: 900px;">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Remitente</th>
+                                <th style="width: 40%;">Mensaje</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportes-table-body"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+
+
+            <!-- ====================================================
+                 SECCIÓN: PRODUCTOS
+                 ==================================================== -->
+            <div id="seccion-productos">
+
+               <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: var(--shadow-sm); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border-left: 5px solid #3182CE;">
+                    <div style="flex: 1; min-width: 300px; margin-bottom: 10px;">
+                        <h3 style="margin-bottom: 5px; color: var(--primary-dark); display: flex; align-items: center; gap: 8px;">
+                            <span class="material-icons" style="color: #3182CE;">cloud_upload</span>
+                            Importación Masiva de Productos
+                        </h3>
+                        <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 5px; line-height: 1.4;">
+                            <strong>1.</strong> Abrí la plantilla en Google Sheets con el botón verde.<br>
+                            <strong>2.</strong> Hacé una copia, completá tus productos en la hoja <strong>Carga</strong>.<br>
+                            <strong>3.</strong> Exportá como <strong>CSV</strong> (Archivo → Descargar → .csv) y súbelo acá.
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        
+                        <a href="https://docs.google.com/spreadsheets/d/12AsrQd8Xgk8nC_byCQRj4FxcXOyCtDAcZgCgLPoVPRU/copy" target="_blank" rel="noopener"
+                           class="btn-auth"
+                           style="background:#38A169; color:white; text-decoration:none; display:flex; align-items:center; gap:8px; margin:0; padding:10px 18px; border-radius:6px; font-weight:bold; font-size:0.9rem;">
+                            <span class="material-icons">table_chart</span>
+                            PLANTILLA GOOGLE SHEETS
+                        </a>
+
+                        <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                        <button type="button" class="btn-auth" style="background: #38A169; border: none; display: flex; align-items: center; gap: 8px; margin: 0;" onclick="document.getElementById('csv-file-input').click();">
+                            <span class="material-icons">upload_file</span>
+                            SUBIR CSV
+                        </button>
+                        
+                        <button type="button" class="btn-auth" style="background: #E53E3E; border: none; display: flex; align-items: center; gap: 8px; margin: 0;" onclick="descargarCatalogoPDF(this)">
+                            <span class="material-icons">picture_as_pdf</span> 
+                            CATÁLOGO PDF
+                        </button>
+
+                        <button type="button" class="btn-outline" style="border-color: #CBD5E0; color: #4A5568; font-weight: bold; display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 15px;" onclick="exportarInventarioCSV(this)">
+                            <span class="material-icons">save_alt</span> 
+                            RESPALDO
+                        </button>
+                    </div>
+                </div>
+                <!-- FIN banner CSV -->
+
+                <!-- Barra de progreso CSV -->
+                <div id="csv-progress-container" style="display: none; background: #F0FFF4; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #9AE6B4; display: flex; align-items: center; gap: 10px;">
+                    <span class="material-icons" style="color: #38A169;" id="csv-progress-icon">sync</span>
+                    <strong style="color: #22543D; font-size: 0.9rem;" id="csv-progress-text">Esperando archivo...</strong>
+                </div>
+
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Inventario</h2>
+                    <button class="btn-hero" onclick="abrirFormulario()">+ NUEVO PRODUCTO</button>
+                </div>
+
+                <!-- Barra de Búsqueda -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                    <div style="flex: 1; min-width: 300px; position: relative;">
+                        <span class="material-icons" style="position: absolute; left: 15px; top: 13px; color: #A0AEC0;">search</span>
+                        <input type="text" id="admin-search" placeholder="Buscar por código, nombre, marca..."
+                            style="width: 100%; padding: 12px 15px 12px 45px; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); outline: none; transition: 0.3s;"
+                            oninput="filtrarTabla()"
+                            onfocus="this.style.borderColor='#3182CE'; this.style.boxShadow='0 0 0 3px rgba(49, 130, 206, 0.2)';"
+                            onblur="this.style.borderColor='#E2E8F0'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.05)';">
+                    </div>
+                    <select id="admin-cat-filter" onchange="filtrarTabla()" title="Filtrar por categoría">
+                        <option value="all">📂 Todas las categorías</option>
+                        <optgroup label="HERRAMIENTAS">
+                            <option value="electricas">Eléctricas</option>
+                            <option value="manuales">Manuales</option>
+                            <option value="inalambricas">Inalámbricas</option>
+                            <option value="jardineria">Jardinería</option>
+                            <option value="medicion">Medición</option>
+                        </optgroup>
+                        <optgroup label="PINTURAS">
+                            <option value="interior/latex">Interior / Látex</option>
+                            <option value="exterior/imper">Exterior / Imper.</option>
+                            <option value="esmaltes sinteticos">Esmaltes</option>
+                            <option value="rodillos">Rodillos y Pinceles</option>
+                        </optgroup>
+                        <optgroup label="PLOMERÍA">
+                            <option value="caños y tubos">Caños y Tubos</option>
+                            <option value="griferia">Grifería</option>
+                            <option value="bombas de agua">Bombas de Agua</option>
+                            <option value="accesorios">Accesorios</option>
+                        </optgroup>
+                        <optgroup label="ELECTRICIDAD">
+                            <option value="cables">Cables</option>
+                            <option value="iluminacion">Iluminación LED</option>
+                            <option value="tomas e interruptores">Tomas e Interr.</option>
+                            <option value="protecciones">Protecciones</option>
+                            <option value="cintas">Cintas Aislantes</option>
+                        </optgroup>
+                        <optgroup label="BULONERÍA">
+                            <option value="tornillos">Tornillos</option>
+                            <option value="tuercas y arandelas">Tuercas y Arandelas</option>
+                            <option value="tarugos y fijaciones">Tarugos</option>
+                            <option value="clavos">Clavos</option>
+                        </optgroup>
+                        <optgroup label="BAZAR">
+                            <option value="utencilios de cocina">Utensilios Cocina</option>
+                            <option value="organizadores y almacenaje">Organizadores</option>
+                            <option value="productos de limpieza">Limpieza</option>
+                            <option value="decoracion de hogar">Decoración Hogar</option>
+                        </optgroup>
+                        <option value="sin categoria">⚠️ Sin Categoría</option>
+                    </select>
+                </div>
+                                <!-- Encabezado con botón nuevo producto -->
+              
+                <!-- Info de orden actual -->
+                <div id="info-orden" style="font-size: 0.85rem; color: #718096; margin-bottom: 8px; text-align: right; min-height: 20px;">
+                    <em>Haz clic en los títulos azules para ordenar la lista.</em>
+                </div>
+
+                <div id="bulk-actions-toolbar" style="display: none; background: #EBF8FF; padding: 15px; border-radius: 8px; border: 1px solid #90CDF4; margin-bottom: 15px; align-items: center; gap: 10px; flex-wrap: wrap; box-shadow: var(--shadow-sm);">
+                    <span style="color: #2B6CB0; font-weight: bold;"><span id="cant-seleccionados" style="font-size: 1.2rem; background: white; padding: 2px 8px; border-radius: 4px;">0</span> seleccionados</span>
+                    
+                    <div style="height: 24px; width: 2px; background: #BEE3F8; margin: 0 5px;"></div> <button onclick="cambiarEstadoMasivo('enOferta', true)" class="btn-outline" style="background: white; color: #DD6B20; border-color: #FBD38D; padding: 6px 12px; font-weight: bold;">
+                        <span class="material-icons" style="font-size: 1.1rem; vertical-align: middle;">local_fire_department</span> + Oferta
+                    </button>
+                    <button onclick="cambiarEstadoMasivo('enOferta', false)" class="btn-outline" style="background: white; color: #718096; border-color: #E2E8F0; padding: 6px 12px;">
+                        - Quitar Oferta
+                    </button>
+
+                    <button onclick="cambiarEstadoMasivo('nuevo', true)" class="btn-outline" style="background: white; color: #3182CE; border-color: #90CDF4; padding: 6px 12px; font-weight: bold;">
+                        <span class="material-icons" style="font-size: 1.1rem; vertical-align: middle;">new_releases</span> + Nuevo
+                    </button>
+                    <button onclick="cambiarEstadoMasivo('nuevo', false)" class="btn-outline" style="background: white; color: #718096; border-color: #E2E8F0; padding: 6px 12px;">
+                        - Quitar Nuevo
+                    </button>
+
+                    <button onclick="borrarSeleccionadosMasivo()" class="btn-outline" style="background: #FFF5F5; color: #E53E3E; border-color: #FEB2B2; padding: 6px 12px; margin-left: auto; font-weight: bold;">
+                        <span class="material-icons" style="font-size: 1.1rem; vertical-align: middle;">delete_sweep</span> Eliminar
+                    </button>
+                </div>
+
+                <div class="table-container" style="overflow-x: auto;">
+                    <table class="admin-table" style="min-width: 950px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)" style="transform: scale(1.3); cursor: pointer;" title="Seleccionar todos en esta página">
+                                </th>
+                                <th>Imagen</th>
+                                <th style="cursor: pointer; white-space: nowrap; transition: 0.2s;" onmouseover="this.style.backgroundColor='#EDF2F7'; this.style.color='#3182CE'" onmouseout="this.style.backgroundColor=''; this.style.color=''" onclick="ordenarTabla('codigo', 'Cód. SKU')" title="Clic para ordenar">Cód. SKU <span id="icon-codigo" class="material-icons sort-icon" style="font-size: 1.1rem; vertical-align: middle; color: #A0AEC0;">unfold_more</span></th>
+                                <th style="cursor: pointer; white-space: nowrap; transition: 0.2s;" onmouseover="this.style.backgroundColor='#EDF2F7'; this.style.color='#3182CE'" onmouseout="this.style.backgroundColor=''; this.style.color=''" onclick="ordenarTabla('marca', 'Marca')" title="Clic para ordenar">Marca <span id="icon-marca" class="material-icons sort-icon" style="font-size: 1.1rem; vertical-align: middle; color: #A0AEC0;">unfold_more</span></th>
+                                <th style="cursor: pointer; white-space: nowrap; transition: 0.2s;" onmouseover="this.style.backgroundColor='#EDF2F7'; this.style.color='#3182CE'" onmouseout="this.style.backgroundColor=''; this.style.color=''" onclick="ordenarTabla('nombre', 'Nombre')" title="Clic para ordenar">Nombre <span id="icon-nombre" class="material-icons sort-icon" style="font-size: 1.1rem; vertical-align: middle; color: #A0AEC0;">unfold_more</span></th>
+                                <th style="cursor: pointer; white-space: nowrap; transition: 0.2s;" onmouseover="this.style.backgroundColor='#EDF2F7'; this.style.color='#3182CE'" onmouseout="this.style.backgroundColor=''; this.style.color=''" onclick="ordenarTabla('precio', 'Precio')" title="Clic para ordenar">Precio <span id="icon-precio" class="material-icons sort-icon" style="font-size: 1.1rem; vertical-align: middle; color: #A0AEC0;">unfold_more</span></th>
+                                <th style="cursor: pointer; white-space: nowrap; transition: 0.2s;" onmouseover="this.style.backgroundColor='#EDF2F7'; this.style.color='#3182CE'" onmouseout="this.style.backgroundColor=''; this.style.color=''" onclick="ordenarTabla('stock', 'Stock')" title="Clic para ordenar">Stock <span id="icon-stock" class="material-icons sort-icon" style="font-size: 1.1rem; vertical-align: middle; color: #A0AEC0;">unfold_more</span></th>
+                                <th style="cursor: pointer; white-space: nowrap; transition: 0.2s;" onmouseover="this.style.backgroundColor='#EDF2F7'; this.style.color='#3182CE'" onmouseout="this.style.backgroundColor=''; this.style.color=''" onclick="ordenarTabla('categoria', 'Categoría')" title="Clic para ordenar">Categoría <span id="icon-categoria" class="material-icons sort-icon" style="font-size: 1.1rem; vertical-align: middle; color: #A0AEC0;">unfold_more</span></th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body"></tbody>
+                    </table>
+                </div>
+                <!-- FIN tabla productos -->
+
+                    <div id="paginacion-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding: 15px; background: white; border-radius: 8px; box-shadow: var(--shadow-sm); border: 1px solid #E2E8F0;">
+                    <div style="color: #718096; font-size: 0.95rem; font-weight: bold;">
+                        Mostrando <span id="pag-info-inicio" style="color: var(--primary-dark);">0</span> - <span id="pag-info-fin" style="color: var(--primary-dark);">0</span> de <span id="pag-info-total" style="color: #3182CE;">0</span> productos
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-pag-ant" onclick="cambiarPagina(-1)" class="btn-outline" style="padding: 8px 20px; font-weight: bold; cursor: pointer;" disabled>
+                            <span class="material-icons" style="font-size: 1rem; vertical-align: middle;">chevron_left</span> Anterior
+                        </button>
+                        <button id="btn-pag-sig" onclick="cambiarPagina(1)" class="btn-outline" style="padding: 8px 20px; font-weight: bold; cursor: pointer;" disabled>
+                            Siguiente <span class="material-icons" style="font-size: 1rem; vertical-align: middle;">chevron_right</span>
+                        </button>
+                    </div>
+        </div>
+
+            </div>
+            <!-- FIN seccion-productos -->
+
+
+            <!-- ====================================================
+                 SECCIÓN: PEDIDOS RECIBIDOS
+                 ==================================================== -->
+            <div id="seccion-pedidos" style="display: none;">
+
+                <!-- Encabezado -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-left: 5px solid var(--primary-blue); padding-left: 15px;">
+                    <h2 style="margin: 0; color: var(--text-dark); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons" style="color: var(--primary-blue);">inbox</span>
+                        Bandeja de Pedidos
+                    </h2>
+                    <button class="btn-auth" onclick="abrirPuntoDeVenta()" style="background: #38A169; border: none; margin: 0; display: flex; align-items: center; gap: 5px; padding: 8px 16px; font-size: 0.95rem;">
+                        <span class="material-icons">point_of_sale</span> + CREAR PEDIDO MANUAL
+                    </button>
+                </div>
+
+                <!-- Tabs internos: Pedidos / Presupuestos -->
+                <div style="display: flex; gap: 0; border-bottom: 2px solid #E2E8F0; margin-bottom: 20px;">
+                    <button id="tab-pedidos-btn" onclick="switchPedidosTab('pedidos')"
+                        style="padding: 10px 24px; font-weight: 700; font-size: 0.9rem; background: none; border: none; border-bottom: 3px solid var(--primary-blue); color: var(--primary-blue); cursor: pointer; margin-bottom: -2px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-icons" style="font-size: 1.1rem;">shopping_bag</span> Pedidos Reales
+                    </button>
+                    <button id="tab-presupuestos-btn" onclick="switchPedidosTab('presupuestos')"
+                        style="padding: 10px 24px; font-weight: 700; font-size: 0.9rem; background: none; border: none; border-bottom: 3px solid transparent; color: #718096; cursor: pointer; margin-bottom: -2px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-icons" style="font-size: 1.1rem;">request_quote</span> Presupuestos
+                        <span id="badge-presupuestos" style="display:none; background:#E53E3E; color:white; font-size:0.7rem; font-weight:800; padding:1px 6px; border-radius:10px; margin-left:2px;"></span>
+                    </button>
+                </div>
+
+                <!-- Tabla Pedidos Reales -->
+                <div id="panel-pedidos-reales">
+                    <div class="table-container" style="overflow-x: auto;">
+                        <table class="admin-table" style="min-width: 900px;">
+                            <thead>
+                                <tr>
+                                    <th>Fecha y Hora</th>
+                                    <th>N° Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pedidos-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tabla Presupuestos -->
+                <div id="panel-presupuestos" style="display: none;">
+                    <div class="table-container" style="overflow-x: auto;">
+                        <table class="admin-table" style="min-width: 900px;">
+                            <thead>
+                                <tr>
+                                    <th>Fecha y Hora</th>
+                                    <th>N° Consulta</th>
+                                    <th>Cliente / Negocio</th>
+                                    <th>Productos</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="presupuestos-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+            <!-- FIN seccion-pedidos -->
+
+            <!-- ══════════════════════════════════════════════════════
+                 SECCIÓN: USUARIOS
+                 Solicitudes pendientes + carga manual + aprobados
+            ══════════════════════════════════════════════════════ -->
+            <div id="seccion-usuarios" style="display:none;">
+
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-left:5px solid #E53E3E;padding-left:15px;flex-wrap:wrap;gap:10px;">
+                    <h2 style="margin:0;color:#2D3748;display:flex;align-items:center;gap:8px;">
+                        <span class="material-icons" style="color:#E53E3E;">group</span>
+                        Gestión de Usuarios
+                    </h2>
+                    <button onclick="abrirModalCargarUsuario()" style="background:#3182CE;color:white;border:none;padding:10px 18px;border-radius:8px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:0.95rem;">
+                        <span class="material-icons" style="font-size:1.1rem;">person_add</span> CARGAR USUARIO MANUALMENTE
+                    </button>
+                </div>
+
+                <!-- Tabs internos: Pendientes / Aprobados / Rechazados -->
+                <div style="display:flex;gap:0;border-bottom:2px solid #E2E8F0;margin-bottom:20px;">
+                    <button class="usr-tab active" onclick="switchUsrTab('pendientes')" id="usr-tab-pendientes"
+                        style="padding:8px 18px;border:none;background:none;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:#718096;font-size:0.95rem;">
+                        ⏳ Solicitudes Pendientes <span id="cnt-pendientes" style="background:#E53E3E;color:white;border-radius:20px;padding:1px 7px;font-size:0.8rem;margin-left:4px;">0</span>
+                    </button>
+                    <button class="usr-tab" onclick="switchUsrTab('aprobados')" id="usr-tab-aprobados"
+                        style="padding:8px 18px;border:none;background:none;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:#718096;font-size:0.95rem;">
+                        ✅ Aprobados
+                    </button>
+                    <button class="usr-tab" onclick="switchUsrTab('rechazados')" id="usr-tab-rechazados"
+                        style="padding:8px 18px;border:none;background:none;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:#718096;font-size:0.95rem;">
+                        ❌ Rechazados
+                    </button>
+                </div>
+
+                <!-- Panel: Pendientes -->
+                <div id="usr-panel-pendientes">
+                    <div id="tabla-solicitudes-pendientes">
+                        <p style="color:#718096;text-align:center;padding:30px;">Cargando solicitudes...</p>
+                    </div>
+                </div>
+
+                <!-- Panel: Aprobados -->
+                <div id="usr-panel-aprobados" style="display:none;">
+                    <div id="tabla-usuarios-aprobados">
+                        <p style="color:#718096;text-align:center;padding:30px;">Cargando usuarios...</p>
+                    </div>
+                </div>
+
+                <!-- Panel: Rechazados -->
+                <div id="usr-panel-rechazados" style="display:none;">
+                    <div id="tabla-solicitudes-rechazadas">
+                        <p style="color:#718096;text-align:center;padding:30px;">Cargando...</p>
+                    </div>
+                </div>
+
+            </div>
+            <!-- FIN seccion-usuarios -->
+
+
+
+        </div>
+        <!-- FIN admin-container -->
+
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         MODAL: Cargar usuario manualmente
+    ══════════════════════════════════════════════════════ -->
+    <div id="modal-cargar-usuario" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:14px;padding:28px;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h3 style="margin:0;color:#2D3748;">👤 Crear Usuario</h3>
+                <button onclick="cerrarModalUsuario()" style="background:none;border:none;cursor:pointer;font-size:1.5rem;color:#718096;">&times;</button>
+            </div>
+            <form id="form-crear-usuario">
+                <div style="display:grid;gap:11px;">
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Nombre Completo *</label>
+                            <input type="text" id="usr-nombre" placeholder="Juan Pérez"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">DNI *</label>
+                            <input type="text" id="usr-dni" placeholder="44262703" maxlength="8"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;font-family:monospace;font-weight:600;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Email *</label>
+                        <input type="email" id="usr-email" placeholder="correo@negocio.com"
+                            style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                    </div>
+
+                    <div>
+                        <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Contraseña Inicial *</label>
+                        <input type="text" id="usr-pass" placeholder="Mín. 6 caracteres"
+                            style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                        <small style="color:#718096;font-size:0.78rem;">El usuario puede cambiarla desde su perfil.</small>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Negocio / Empresa *</label>
+                            <input type="text" id="usr-negocio" placeholder="Ferretería El Tornillo"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">CUIT</label>
+                            <input type="text" id="usr-cuit" placeholder="20-12345678-9" maxlength="13"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;font-family:monospace;">
+                        </div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Teléfono</label>
+                            <input type="tel" id="usr-telefono" placeholder="3755-123456"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Ciudad</label>
+                            <input type="text" id="usr-ciudad" placeholder="Oberá, Misiones"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Dirección</label>
+                        <input type="text" id="usr-direccion" placeholder="Av. San Martín 540"
+                            style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                    </div>
+
+                </div>
+
+                <!-- Error box -->
+                <div id="usr-error" style="display:none;background:#FFF5F5;border:1px solid #FC8181;color:#C53030;border-radius:8px;padding:10px 14px;font-size:0.85rem;margin-top:12px;"></div>
+
+                <div style="display:flex;gap:10px;margin-top:18px;">
+                    <button type="button" onclick="cerrarModalUsuario()"
+                        style="flex:1;padding:11px;border:1.5px solid #E2E8F0;border-radius:8px;background:white;cursor:pointer;font-weight:600;color:#4A5568;">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="usr-submit-btn"
+                        style="flex:2;padding:11px;background:#38A169;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;">
+                        ✅ CREAR Y APROBAR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- FIN dashboard-screen -->
+
+
+    <!-- ============================================================
+         MODAL: CONFIRMACIÓN PERSONALIZADA
+         ============================================================ -->
+    <div id="confirm-modal">
+        <div class="confirm-box">
+            <div id="confirm-icon-txt" style="font-size:2rem;text-align:center;margin-bottom:10px;"></div>
+            <h3 id="confirm-title-txt" style="margin:0 0 8px;color:#2D3748;text-align:center;font-size:1.05rem;font-weight:700;"></h3>
+            <p id="confirm-msg-txt" style="color:#718096;text-align:center;margin:0 0 22px;font-size:0.88rem;line-height:1.5;"></p>
+            <div style="display:flex;gap:10px;">
+                <button onclick="resolverConfirm(false)"
+                    style="flex:1;padding:11px;border:1.5px solid #E2E8F0;border-radius:8px;background:white;cursor:pointer;font-weight:600;color:#4A5568;font-size:0.9rem;">
+                    Cancelar
+                </button>
+                <button id="confirm-ok-btn" onclick="resolverConfirm(true)"
+                    style="flex:1;padding:11px;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9rem;">
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: FORMULARIO DE PRODUCTO (Crear / Editar)
+         ============================================================ -->
+    <div class="form-overlay" id="product-modal">
+        <div class="form-box" style="max-width: 750px; width: 90%;">
+            <h3 id="modal-title" style="margin-bottom: 20px;">Nuevo Producto</h3>
+
+            <form id="product-form">
+
+                <!-- Campos ocultos -->
+                <input type="hidden" id="edit-id">
+                <input type="hidden" id="p-imagen-url-actual">
+
+                <!-- Código de Barras / SKU -->
+                <div class="form-group">
+                    <label>Código de Barras / SKU</label>
+                    <input type="text" id="p-codigo" placeholder="Dispara la pistola aquí..." style="font-family: monospace; letter-spacing: 1px; font-weight: bold;">
+                </div>
+
+                <!-- Nombre del Producto -->
+                <div class="form-group">
+                    <label>Nombre del Producto</label>
+                    <input type="text" id="p-nombre" required>
+                </div>
+
+                <!-- Marca y Stock -->
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Marca</label>
+                        <input type="text" id="p-marca" required>
+                    </div>
+                    <div class="form-group" style="width: 100px;">
+                        <label>Stock</label>
+                        <input type="number" id="p-stock" value="100" min="0" required>
+                    </div>
+                </div>
+
+                <!-- Categoría -->
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="p-categoria">
+                        <option value="" disabled selected>Seleccionar categoría...</option>
+                        
+                        <option value="sin categoria" style="font-weight: bold; color: #E53E3E;">⚠️ Sin Categoría</option>
+
+                        <optgroup label="HERRAMIENTAS">
+                            <option value="electricas">Eléctricas</option>
+                            <option value="manuales">Manuales</option>
+                            <option value="inalambricas">Inalámbricas</option>
+                            <option value="jardineria">Jardinería</option>
+                            <option value="medicion">Medición</option>
+                        </optgroup>
+
+                        <optgroup label="PINTURAS">
+                            <option value="interior/latex">Interior / Látex</option>
+                            <option value="exterior/imper">Exterior / Impermeabilizante</option>
+                            <option value="esmaltes sinteticos">Esmaltes Sintéticos</option>
+                            <option value="rodillos">Rodillos y Pinceles</option>
+                        </optgroup>
+
+                        <optgroup label="PLOMERÍA">
+                            <option value="caños y tubos">Caños y Tubos</option>
+                            <option value="griferia">Grifería</option>
+                            <option value="bombas de agua">Bombas de Agua</option>
+                            <option value="accesorios">Accesorios</option>
+                        </optgroup>
+
+                        <optgroup label="ELECTRICIDAD">
+                            <option value="cables">Cables</option>
+                            <option value="iluminacion">Iluminación LED</option>
+                            <option value="tomas e interruptores">Tomas e Interruptores</option>
+                            <option value="protecciones">Protecciones Eléctricas</option>
+                            <option value="cintas">Cintas Aislantes</option>
+                        </optgroup>
+
+                        <optgroup label="BULONERÍA">
+                            <option value="tornillos">Tornillos Madera / Metal</option>
+                            <option value="tuercas y arandelas">Tuercas y Arandelas</option>
+                            <option value="tarugos y fijaciones">Tarugos y Fijaciones</option>
+                            <option value="clavos">Clavos</option>
+                        </optgroup>
+
+                        <optgroup label="BAZAR">
+                            <option value="utencilios de cocina">Utensilios de Cocina</option>
+                            <option value="organizadores y almacenaje">Organizadores y Almacenaje</option>
+                            <option value="productos de limpieza">Productos de Limpieza</option>
+                            <option value="decoracion de hogar">Decoración Hogar</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <!-- Precio Unitario y opción Venta por Caja -->
+                <div style="display: flex; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Precio Unitario ($)</label>
+                        <input type="number" id="p-precio" required>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>¿Vende por Caja?</label>
+                        <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
+                            <input type="checkbox" id="p-por-caja" style="width: auto;">
+                            <span style="font-size: 0.9rem; color:#718096;">Activar venta por caja</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opciones de Caja (ocultas por defecto) -->
+                <div id="caja-opciones" style="display: none; background: #EBF8FF; padding: 15px; border-radius: 8px; border: 1px dashed #3182CE; margin-bottom: 15px;">
+                    <div style="display: flex; gap: 15px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label>Unidades por Caja</label>
+                            <input type="number" id="p-unidades-caja" placeholder="Ej: 12">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label>Precio Total de la Caja ($)</label>
+                            <input type="number" id="p-precio-caja" placeholder="Ej: 10000">
+                        </div>
+                    </div>
+                    <small style="color: #3182CE; display: block; margin-top: 10px;">
+                        * Si el cliente elige la caja, se aplicará este precio cerrado.
+                    </small>
+                </div>
+
+                <!-- Imagen del Producto -->
+                <div class="form-group">
+                    <label>Imagen del Producto</label>
+                    <input type="text" id="p-imagen-url-manual" placeholder="Pegar enlace de imagen (https://...)" style="margin-bottom: 10px; border: 2px solid #3182CE;">
+                    <input type="file" id="p-archivo-imagen" accept="image/*">
+                    <small style="color: #777;">Nota: Si pegas un link arriba, se ignorará el archivo subido.</small>
+                    <div id="preview-img-container" style="margin-top:10px; display:none;">
+                        <img id="preview-img" src="" style="width: 100px; height: 100px; object-fit: contain; border: 1px solid #ddd; border-radius: 8px;">
+                    </div>
+                </div>
+
+                <!-- Descripción -->
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="p-desc" rows="3"></textarea>
+                </div>
+
+                <!-- Checkboxes: Oferta y Nuevo Ingreso -->
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="p-oferta" style="width: auto;">
+                    <label for="p-oferta" style="margin: 0;">¿Es Oferta?</label>
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="p-nuevo" style="width: auto;">
+                    <label for="p-nuevo" style="margin: 0; color: #3182CE; font-weight: bold;">¿Es Nuevo Ingreso?</label>
+                </div>
+
+                <!-- ── VARIANTES ─────────────────────────────────────────── -->
+                <div style="border-radius:12px; margin:15px 0; overflow:hidden; border:1.5px solid #E2E8F0;">
+
+                    <!-- Encabezado del bloque -->
+                    <div style="background:linear-gradient(135deg,#EBF8FF 0%,#F0FFF4 100%); padding:14px 16px; border-bottom:1.5px solid #E2E8F0;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <input type="checkbox" id="p-tiene-variantes" style="width:auto; transform:scale(1.3); accent-color:#3182CE; cursor:pointer;"
+                                   onchange="toggleVariantes(this.checked)">
+                            <div>
+                                <label for="p-tiene-variantes" style="margin:0; font-weight:800; color:#1A365D; font-size:0.95rem; cursor:pointer; display:block;">
+                                    ⚡ Este producto tiene variantes
+                                </label>
+                                <span style="font-size:0.8rem; color:#718096;">Ej: distintos amperajes, medidas, colores, presentaciones</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cuerpo del editor (oculto hasta activar) -->
+                    <div id="variantes-editor" style="display:none; padding:16px; background:white;">
+
+                        <!-- Info -->
+                        <div style="background:#EBF8FF; border-left:4px solid #3182CE; border-radius:0 8px 8px 0; padding:10px 14px; margin-bottom:16px; font-size:0.83rem; color:#2B6CB0; line-height:1.5;">
+                            Los compradores verán un <strong>modal</strong> para elegir la variante antes de agregar al carrito.<br>
+                            <span style="color:#718096;">Si solo hay 1 dimensión (ej: solo medida), dejá el campo 2 vacío.</span>
+                        </div>
+
+                        <!-- Etiquetas de dimensiones -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+                            <div>
+                                <label style="font-size:0.78rem; font-weight:700; color:#4A5568; text-transform:uppercase; letter-spacing:.04em; display:block; margin-bottom:6px;">
+                                    <span style="display:inline-block; background:#3182CE; color:white; border-radius:4px; padding:1px 6px; font-size:0.7rem; margin-right:4px;">1</span>
+                                    Nombre primera dimensión
+                                </label>
+                                <input type="text" id="p-label-dim1" placeholder='Ej: Presentación, Color, Amperaje'
+                                       style="width:100%; padding:9px 12px; border:1.5px solid #E2E8F0; border-radius:8px; font-size:0.88rem; box-sizing:border-box; transition:border-color .2s;"
+                                       onfocus="this.style.borderColor='#3182CE'" onblur="this.style.borderColor='#E2E8F0'">
+                            </div>
+                            <div>
+                                <label style="font-size:0.78rem; font-weight:700; color:#4A5568; text-transform:uppercase; letter-spacing:.04em; display:block; margin-bottom:6px;">
+                                    <span style="display:inline-block; background:#718096; color:white; border-radius:4px; padding:1px 6px; font-size:0.7rem; margin-right:4px;">2</span>
+                                    Nombre segunda dimensión <span style="font-weight:400; text-transform:none; color:#A0AEC0; font-size:0.75rem;">(opcional)</span>
+                                </label>
+                                <input type="text" id="p-label-dim2" placeholder='Ej: Medida, Talle — vacío si hay 1 sola'
+                                       style="width:100%; padding:9px 12px; border:1.5px solid #E2E8F0; border-radius:8px; font-size:0.88rem; box-sizing:border-box; transition:border-color .2s;"
+                                       onfocus="this.style.borderColor='#3182CE'" onblur="this.style.borderColor='#E2E8F0'">
+                            </div>
+                        </div>
+
+                        <!-- Cabecera de la tabla -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr 100px 80px 1fr 36px; gap:6px; padding:8px 10px; background:#F7FAFC; border-radius:8px 8px 0 0; border:1px solid #E2E8F0; border-bottom:none;">
+                            <span style="font-size:0.72rem; font-weight:700; color:#718096; text-transform:uppercase; letter-spacing:.05em;" id="col-header-dim1">Valor DIM 1</span>
+                            <span style="font-size:0.72rem; font-weight:700; color:#718096; text-transform:uppercase; letter-spacing:.05em;" id="col-header-dim2">Valor DIM 2</span>
+                            <span style="font-size:0.72rem; font-weight:700; color:#718096; text-transform:uppercase; letter-spacing:.05em; text-align:center;">Precio $</span>
+                            <span style="font-size:0.72rem; font-weight:700; color:#718096; text-transform:uppercase; letter-spacing:.05em; text-align:center;">Stock</span>
+                            <span style="font-size:0.72rem; font-weight:700; color:#718096; text-transform:uppercase; letter-spacing:.05em;">Imagen URL</span>
+                            <span></span>
+                        </div>
+
+                        <!-- Filas de variantes -->
+                        <div id="variantes-lista" style="display:flex; flex-direction:column; gap:0; border:1px solid #E2E8F0; border-radius:0 0 8px 8px; overflow:hidden;"></div>
+
+                        <!-- Botón agregar -->
+                        <button type="button" onclick="agregarFilaVariante()"
+                                style="margin-top:12px; background:white; color:#3182CE; border:1.5px dashed #90CDF4;
+                                       border-radius:10px; padding:10px 16px; font-weight:700; cursor:pointer;
+                                       font-size:0.88rem; width:100%; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:6px;"
+                                onmouseover="this.style.background='#EBF8FF'" onmouseout="this.style.background='white'">
+                            <span style="font-size:1.1rem; line-height:1;">+</span> AGREGAR VARIANTE
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Indicador de subida de imagen -->
+                <div id="upload-progress" style="display:none; color: var(--primary-blue); font-weight:bold; margin-bottom:10px;">
+                    Subiendo imagen... por favor espera.
+                </div>
+
+                <!-- Botones del Formulario -->
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-outline" onclick="cerrarFormulario()" style="flex: 1;">Cancelar</button>
+                    <button type="submit" class="btn-auth" style="margin-top: 0; flex: 1;">GUARDAR</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+    <!-- FIN product-modal -->
+
+
+    <!-- ============================================================
+         MODAL: DETALLE DE PEDIDO
+         ============================================================ -->
+    <div class="form-overlay" id="pedido-modal" style="z-index: 3000;">
+        <div class="form-box" style="max-width: 600px; padding: 25px;">
+
+            <!-- Encabezado -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #edf2f7; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 id="modal-pedido-title" style="margin: 0; color: var(--primary-dark); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons" style="color: var(--primary-blue);">receipt_long</span>
+                    Detalle del Pedido
+                </h3>
+                <button onclick="cerrarModalPedido()" style="background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #a0aec0; transition: 0.2s;" onmouseover="this.style.color='#E53E3E'" onmouseout="this.style.color='#a0aec0'">&times;</button>
+            </div>
+
+            <!-- Info del Cliente -->
+            <div id="pedido-cliente-info" style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; color: #4a5568; line-height: 1.6; border: 1px solid #e2e8f0;">
+            </div>
+
+            <!-- Lista de Items -->
+            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #edf2f7; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #edf2f7; text-align: left; color: #a0aec0;">
+                            <th style="padding-bottom: 8px; width: 50px;">Cant.</th>
+                            <th style="padding-bottom: 8px;">Producto</th>
+                            <th style="padding-bottom: 8px; text-align: right;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pedido-items-lista"></tbody>
+                </table>
+            </div>
+
+            <!-- Pie: Cerrar y Total -->
+            <input type="hidden" id="pedido-edit-id">
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border-top: 2px solid #edf2f7; padding-top: 15px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-outline" onclick="cerrarModalPedido()" style="padding: 8px 20px;">Cancelar</button>
+                    <button class="btn-auth" onclick="guardarPedidoEditado()" style="padding: 8px 20px; background: var(--primary-dark); margin: 0;">Guardar</button>
+                    
+                    <button class="btn-auth" onclick="guardarEImprimirPedido()" style="padding: 8px 15px; background: #D69E2E; margin: 0; display: flex; align-items: center; gap: 5px;" title="Imprimir">
+                        <span class="material-icons" style="font-size: 1.2rem;">print</span> Imprimir
+                    </button>
+                    
+                    <button class="btn-auth" onclick="guardarEDescargarPedido()" style="padding: 8px 15px; background: #3182CE; margin: 0; display: flex; align-items: center; gap: 5px;" title="Descargar PDF">
+                        <span class="material-icons" style="font-size: 1.2rem;">download</span> PDF
+                    </button>
+                </div>
+                <div style="font-size: 1.3rem; font-weight: 900; color: var(--text-dark); text-align: right;">
+                    Total: <span id="pedido-total-precio" style="color: #38a169;">$0</span>
+                </div>
+            </div> 
+
+        </div>
+    </div>
+    <!-- FIN pedido-modal -->
+
+
+    <div id="print-section" class="print-only">
+        
+        <div class="print-header">
+            <div class="print-logo-box">
+                <img src="./EnzoDistribuidora.png" alt="Distribuciones Enzo">
+                <div class="print-company-info">
+                    <strong>Distribuciones Enzo</strong><br>
+                    Depósito Principal:Ushuaia 331, N3361 Oberá, Misiones<br>
+                    WhatsApp: +54 9 3755 503213<br>
+                    distribucionesenzo28@gmail.com
+                </div>
+            </div>
+            <div class="print-order-info">
+                <h1 id="print-order-number">#C-0000</h1>
+                <p id="print-order-date">Fecha: 00/00/0000</p>
+            </div>
+        </div>
+
+        <hr style="border: 1px solid #000; margin: 15px 0;">
+
+        <div class="print-client-box">
+            <div style="margin-bottom: 5px;">
+                <strong style="font-size: 1.1rem;">👤 <span id="print-client-name">Cliente Final</span></strong>
+            </div>
+            <div>📍 <span id="print-client-address">Dirección</span> - <span id="print-client-city">Localidad</span> (CP: <span id="print-client-cp">0000</span>)</div>
+            <div>📞 <span id="print-client-phone">Teléfono</span></div>
+            <div>🚚 Envío: <strong id="print-client-shipping">Método</strong> | 💳 Pago: <strong id="print-client-payment">Método</strong></div>
+        </div>
+
+        <h3 style="margin-bottom: 5px; font-size: 1rem; border-bottom: 2px solid #000; padding-bottom: 5px;" id="print-items-count">X ítems</h3>
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Cant.</th>
+                    <th style="text-align: left;">Descripción del Producto</th>
+                    <th style="text-align: right; width: 20%;">P. Unitario</th>
+                    <th style="text-align: right; width: 20%;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody id="print-items-body">
+                </tbody>
+        </table>
+
+        <div class="print-totals">
+            <div class="print-total-row" style="font-size: 1.5rem; font-weight: 900;">
+                <span>Total:</span>
+                <span id="print-total-price">$0,00</span>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; font-weight: bold; font-size: 1.1rem;">
+            ¡Muchas gracias por su compra!
+        </div>
+
+    </div>
+
+    <div class="form-overlay" id="pos-modal" style="z-index: 4000;">
+        <div class="form-box" style="max-width: 900px; padding: 25px; width: 95%;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #edf2f7; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #2D3748; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-icons" style="color: #38A169;">point_of_sale</span>
+                    Punto de Venta Manual
+                </h3>
+                <button onclick="cerrarPuntoDeVenta()" style="background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #a0aec0;">&times;</button>
+            </div>
+
+            <form id="pos-form" onsubmit="event.preventDefault(); confirmarVentaPOS();">
+                
+                <div style="background: #F7FAFC; padding: 15px; border-radius: 8px; border: 1px solid #E2E8F0; margin-bottom: 20px;">
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 250px; margin-bottom: 0;">
+                            <label>Nombre del Cliente</label>
+                            <input type="text" id="pos-cliente-nombre" placeholder="Ej: Juan Pérez" required style="border-color: #3182CE;">
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                            <label>Tipo de Venta</label>
+                            <select id="pos-tipo-venta" onchange="toggleCamposEnvioPOS()" style="font-weight: bold; color: #2D3748;">
+                                <option value="local">🏪 Retiro en Local / Mostrador</option>
+                                <option value="envio">🚚 Envío a Distancia</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="pos-campos-envio" style="display: none; border-top: 1px dashed #CBD5E0; padding-top: 15px; margin-top: 10px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <div class="form-group" style="margin-bottom: 0;"><label>Dirección Exacta</label><input type="text" id="pos-cliente-direccion"></div>
+                            <div class="form-group" style="margin-bottom: 0;"><label>Localidad / Provincia</label><input type="text" id="pos-cliente-localidad"></div>
+                            <div class="form-group" style="margin-bottom: 0;"><label>Código Postal</label><input type="text" id="pos-cliente-cp"></div>
+                            <div class="form-group" style="margin-bottom: 0;"><label>Teléfono (WhatsApp)</label><input type="text" id="pos-cliente-tel"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="position: relative; margin-bottom: 20px;">
+                    <label style="font-weight: bold; color: #4A5568; display: block; margin-bottom: 5px;">Buscar o Explorar Catálogo</label>
+                    <div style="position: relative;">
+                        <span class="material-icons" style="position: absolute; left: 10px; top: 10px; color: #A0AEC0;">search</span>
+                        <input type="text" id="pos-buscador" placeholder="Escribe para buscar... o desliza la lista para ver fotos" 
+                               style="width: 100%; padding: 10px 10px 10px 40px; border: 2px solid #3182CE; border-radius: 8px; font-size: 1.1rem; outline: none;"
+                               oninput="ejecutarBusquedaPOS(this.value)"
+                               onfocus="ejecutarBusquedaPOS(this.value)">
+                    </div>
+                    <div id="pos-resultados-busqueda" style="position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #CBD5E0; border-radius: 0 0 8px 8px; box-shadow: var(--shadow-md); z-index: 10; max-height: 350px; overflow-y: auto; display: none;">
+                        </div>
+                </div>
+
+                <div style="border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                        <thead style="background: #EDF2F7; color: #4A5568; text-align: left;">
+                            <tr>
+                                <th style="padding: 10px;">Producto</th>
+                                <th style="padding: 10px; width: 100px;">Cant.</th>
+                                <th style="padding: 10px; width: 120px;">Precio U. ($)</th>
+                                <th style="padding: 10px; text-align: right; width: 100px;">Subtotal</th>
+                                <th style="padding: 10px; width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="pos-carrito-body">
+                            <tr><td colspan="5" style="text-align: center; padding: 20px; color: #A0AEC0;">El carrito está vacío. Busca un producto arriba.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #EBF8FF; padding: 15px; border-radius: 8px; border: 1px solid #90CDF4;">
+                    <div style="font-size: 1.5rem; font-weight: 900; color: #2B6CB0;">
+                        TOTAL: <span id="pos-total-precio">$0</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn-outline" onclick="cerrarPuntoDeVenta()">Cancelar</button>
+                        <button type="submit" class="btn-auth" style="background: #38A169; border: none; margin: 0; font-size: 1.1rem;" id="btn-confirmar-pos">
+                            <span class="material-icons" style="vertical-align: middle;">check_circle</span> CONFIRMAR VENTA
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+
+
+<div id="catalog-print-section" style="display:none; background: white; padding: 20px; font-family: Arial, sans-serif;">
+        
+        <div style="text-align: center; border-bottom: 3px solid #3182CE; padding-bottom: 20px; margin-bottom: 20px;">
+            <img src="./EnzoDistribuidora.png" alt="Distribuciones Enzo" style="max-height: 80px;">
+            <h1 style="margin: 10px 0 5px 0; color: #2D3748; font-size: 26px; text-transform: uppercase;">Catálogo de Productos</h1>
+            <p style="margin: 0; color: #718096; font-size: 14px;">Depósito Principal: Ushuaia 331, N3361 Oberá, Misiones | WhatsApp: +54 9 3755 503213</p>
+            <p style="margin: 5px 0 0 0; color: #A0AEC0; font-size: 12px;" id="catalog-date-info">Actualizado al: 00/00/0000</p>
+        </div>
+
+        <div id="catalog-items-container" style="text-align: left;">
+            </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 20px; background: #EBF8FF; border-radius: 12px; border: 2px dashed #3182CE; page-break-inside: avoid;">
+            <h2 style="color: #2B6CB0; margin: 0 0 10px 0; font-size: 20px;">¿Listo para hacer tu pedido?</h2>
+            <p style="color: #4A5568; font-size: 16px; margin: 0 0 20px 0;">Ingresá a nuestra plataforma para ver nuestro stock actualizado y armar tu carrito mayorista al instante.</p>
+            <a href="https://enzodistribuciones.com/" style="display: inline-block; background: #3182CE; color: white; padding: 15px 30px; text-decoration: none; font-weight: bold; border-radius: 8px; font-size: 18px;">
+                👉 enzodistribuciones.com
+            </a>
+        </div>
+
+    </div>
+
+    <!-- ============================================================
+         SCRIPT INLINE — Lógica visual del formulario
+         ============================================================ -->
+    <script>
+        // Lógica visual simple para mostrar/ocultar las opciones de caja
+        document.getElementById('p-por-caja').addEventListener('change', function(e) {
+            const opcionesCaja = document.getElementById('caja-opciones');
+            if (e.target.checked) {
+                opcionesCaja.style.display = 'block';
+            } else {
+                opcionesCaja.style.display = 'none';
+            }
+        });
+    </script>
+
+
+    <!-- ============================================================
+         LIBRERÍAS EXTERNAS
+         ============================================================ -->
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <!-- html2pdf — Descarga como PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- PapaParse — Lectura de archivos CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- xlsx-js-style: incluye SheetJS + estilos de color
+         Estrategia: 3 CDNs en cadena. Si los 3 fallan → SheetJS base sin colores -->
+    <script>
+    (function() {
+        var cdns = [
+            'https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx-js-style.min.js',
+            'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx-js-style.min.js'
+        ];
+        var fallback = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        var idx = 0;
+        function tryNext() {
+            if (idx >= cdns.length) {
+                // Todos los CDNs de xlsx-js-style fallaron → SheetJS sin estilos
+                var s = document.createElement('script');
+                s.src = fallback;
+                document.head.appendChild(s);
+                return;
+            }
+            var s = document.createElement('script');
+            s.src = cdns[idx++];
+            s.onerror = tryNext;
+            document.head.appendChild(s);
+        }
+        tryNext();
+    })();
+    </script>
+
+
+    <!-- Lógica principal del Admin -->
+    <script src="admin.js"></script>
+
+</body>
+</html>

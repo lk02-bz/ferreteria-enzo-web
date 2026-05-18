@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página no encontrada | Distribuidora Enzo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="icon" type="image/png" href="./icono-pestaña.png">
+    <style>
+        .error-container {
+            min-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .error-code {
+            font-size: 7rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            line-height: 1;
+            margin-bottom: 10px;
+            opacity: 0.15;
+        }
+        .error-icon {
+            font-size: 4rem !important;
+            color: var(--primary-blue);
+            margin-bottom: 16px;
+        }
+        .error-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+        }
+        .error-desc {
+            font-size: 1rem;
+            color: #718096;
+            max-width: 420px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        .error-links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn-primary-404 {
+            background: var(--primary-blue);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .btn-primary-404:hover { background: var(--primary-dark); color: white; }
+        .btn-outline-404 {
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-outline-404:hover { background: var(--primary-blue); color: white; }
+    </style>
+</head>
+<body>
+    <header class="main-header" style="border-bottom: 1px solid #E2E8F0;">
+        <div class="container header-content" style="justify-content: center;">
+            <a href="index.html" class="logo">
+                <img src="./EnzoDistribuidora.png" alt="Distribuciones Enzo" style="max-height: 50px;">
+            </a>
+        </div>
+    </header>
+
+    <div class="error-container">
+        <div class="error-code">404</div>
+        <span class="material-icons error-icon">search_off</span>
+        <h1 class="error-title">Página no encontrada</h1>
+        <p class="error-desc">
+            El enlace que seguiste puede estar roto o la página ya no existe.
+            No te preocupes, desde acá podés volver a lo que necesitás.
+        </p>
+        <div class="error-links">
+            <a href="index.html" class="btn-primary-404">
+                <span class="material-icons" style="font-size:1.1rem;">home</span>
+                Volver al inicio
+            </a>
+            <a href="productos.html" class="btn-outline-404">
+                <span class="material-icons" style="font-size:1.1rem;">storefront</span>
+                Ver catálogo
+            </a>
+            <a href="https://wa.me/5493755503213" target="_blank" class="btn-outline-404">
+                <span class="material-icons" style="font-size:1.1rem;">chat</span>
+                Contactar a Enzo
+            </a>
+        </div>
+    </div>
+
+    <footer style="background: var(--navy-bg); text-align: center; padding: 30px; color: #A0AEC0; font-size: 0.85rem;">
+        <p>&copy; 2026 Enzo Distribuciones. Todos los derechos reservados.</p>
+    </footer>
+</body>
+</html>
