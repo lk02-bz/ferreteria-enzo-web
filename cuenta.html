@@ -1,37 +1,243 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <!-- Preconnect: Firebase y Google Fonts (mejora velocidad de carga) -->
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Cuenta - Ferretería Enzo</title>
+    <title>Mi Cuenta - Distribuciones Enzo</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="icon" type="image/png" href="./logo-empresa.png">
+    <style>
+        /* ── Tabs login / solicitud ── */
+        .auth-tabs {
+            display: flex;
+            border-bottom: 2px solid #E2E8F0;
+            margin-bottom: 24px;
+            gap: 0;
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #718096;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
+        .auth-tab.active {
+            color: var(--primary-blue, #2B6CB0);
+            border-bottom-color: var(--primary-blue, #2B6CB0);
+        }
+        .auth-tab-panel { display: none; }
+        .auth-tab-panel.active { display: block; }
+
+        /* ── Formulario solicitud ── */
+        .solicitud-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .solicitud-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-field label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #4A5568;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .form-field .opt-tag {
+            font-size: 0.72rem;
+            font-weight: 400;
+            color: #A0AEC0;
+            text-transform: none;
+            letter-spacing: 0;
+            margin-left: 4px;
+        }
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            padding: 11px 14px;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 10px;
+            font-size: 0.92rem;
+            color: #2D3748;
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-field input:focus,
+        .form-field select:focus,
+        .form-field textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue, #2B6CB0);
+            box-shadow: 0 0 0 3px rgba(43,108,176,0.12);
+            background: #fff;
+        }
+        .form-field .input-icon-wrap {
+            position: relative;
+        }
+        .form-field .input-icon-wrap .material-icons {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.15rem;
+            color: #25D366;
+            pointer-events: none;
+        }
+        .form-field .input-icon-wrap input {
+            padding-left: 38px;
+        }
+        .form-field textarea { resize: vertical; min-height: 70px; }
+
+        /* ── Info box solicitud ── */
+        .info-solicitud {
+            background: #EBF8FF;
+            border: 1px solid #90CDF4;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            font-size: 0.88rem;
+            color: #2B6CB0;
+            line-height: 1.6;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .info-solicitud .material-icons { flex-shrink: 0; font-size: 1.2rem; margin-top: 2px; }
+
+        /* ── Aviso pendiente de aprobación ── */
+        #pendiente-aprobacion-box {
+            background: #FFFBEB;
+            border: 1px solid #F6E05E;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #744210;
+            display: none;
+        }
+
+        /* ── Dashboard favoritos / pedidos ── */
+        #seccion-favoritos, #seccion-pedidos {
+            display: none;
+            margin-top: 24px;
+        }
+        .pedido-card {
+            background: #F7FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        .pedido-card .pedido-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .estado-badge {
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+        .estado-pendiente   { background: #FEEBC8; color: #744210; }
+        .estado-confirmado  { background: #C6F6D5; color: #22543D; }
+        .estado-cancelado   { background: #FED7D7; color: #742A2A; }
+        .estado-despachado  { background: #BEE3F8; color: #1A365D; }
+
+        @media (max-width: 600px) {
+            .solicitud-row { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 
 <body>
-    
+    <!-- ░░ BANNER: SITIO EN DESARROLLO ░░ — Eliminar al lanzar en producción -->
+    <div id="dev-banner" style="
+        background: linear-gradient(135deg, #744210 0%, #92400E 100%);
+        color: #FEF3C7;
+        font-size: 0.8rem;
+        font-weight: 500;
+        padding: 8px 16px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        letter-spacing: 0.02em;
+        position: relative;
+        z-index: 9999;
+    ">
+        <span style="font-size: 1rem; line-height: 1;">🚧</span>
+        <span>Sitio en desarrollo — algunos cambios pueden no estar disponibles.</span>
+        <span style="background: rgba(255,255,255,0.15); padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;">BETA</span>
+        <button onclick="this.parentElement.style.display='none'" style="
+            background: none; border: none; color: #FEF3C7; cursor: pointer;
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            font-size: 1.1rem; line-height: 1; opacity: 0.7; padding: 0;
+        " title="Cerrar">✕</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         HEADER
+    ══════════════════════════════════════════ -->
     <header class="main-header">
         <div class="container header-content">
             <button class="menu-toggle" id="mobile-menu-btn"><span class="material-icons">menu</span></button>
-            <div class="logo">FERRETERÍA <span class="text-orange">ENZO</span></div>
+           <a href="index.html" class="logo">
+            <img src="./EnzoDistribuidora.png" alt="Distribuciones Enzo">
+          </a>
+
             <nav class="main-nav" id="main-nav">
                 <ul>
-                    <li><a href="index.html">Inicio</a></li>
                     <li><a href="productos.html">Productos</a></li>
                     <li><a href="index.html#ofertas">Ofertas</a></li>
-                    <li><a href="#contacto">Contacto</a></li>
+                    <li><a href="index.html#contacto">Contacto</a></li>
                 </ul>
             </nav>
+
             <div class="search-container">
                 <form class="search-bar" id="search-form">
-                    <input type="text" id="search-input" placeholder="¿Qué buscas? (ej: taladro, makita...)" autocomplete="off">
+                    <input type="text" id="search-input" placeholder="Buscar producto..." autocomplete="off">
                     <button type="submit" class="search-btn">
                         <span class="material-icons">search</span>
                     </button>
                 </form>
                 <div class="search-results" id="search-results"></div>
             </div>
+
             <div class="user-actions">
+                <a href="cuenta.html" class="btn-outline desktop-only">CUENTA</a>
+                <a href="cuenta.html" class="mobile-user-icon">
+                    <span class="material-icons">person</span>
+                </a>
                 <div class="cart-icon">
                     <span class="material-icons">shopping_cart</span>
                     <span class="badge">0</span>
@@ -40,77 +246,363 @@
         </div>
     </header>
 
+    <!-- ══════════════════════════════════════════
+         SECCIÓN PRINCIPAL — sin login
+    ══════════════════════════════════════════ -->
     <div class="auth-container">
-        <div class="auth-wrapper">
-            
-            <div class="auth-box" id="login-box">
-                <h2>¡Hola de nuevo! 👋</h2>
-                <p>Ingresá tus datos para continuar</p>
-                
-                <form id="form-login">
-                    <div class="input-group">
-                        <span class="material-icons">email</span>
-                        <input type="email" placeholder="Tu Email" required>
-                    </div>
-                    <div class="input-group">
-                        <span class="material-icons">lock</span>
-                        <input type="password" placeholder="Tu Contraseña" required>
-                    </div>
-                    
-                    <a href="#" class="forgot-pass">¿Olvidaste tu contraseña?</a>
-                    
-                    <button type="submit" class="btn-auth">INGRESAR</button>
-                </form>
 
-                <div class="auth-switch">
-                    <p>¿No tenés cuenta? <a href="#" id="show-register">Crear cuenta</a></p>
+        <!-- ── Formularios (visible si NO está logueado) ── -->
+        <div class="auth-wrapper" id="auth-forms">
+            <div class="auth-box" style="max-width:480px;">
+
+                <!-- Tabs -->
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">
+                        <span class="material-icons" style="font-size:1rem;vertical-align:middle;">login</span>
+                        Ingresar
+                    </button>
+                    <button class="auth-tab" id="tab-solicitud" onclick="switchTab('solicitud')">
+                        <span class="material-icons" style="font-size:1rem;vertical-align:middle;">assignment</span>
+                        Solicitar Acceso
+                    </button>
                 </div>
-            </div>
 
-            <div class="auth-box hidden" id="register-box">
-                <h2>Crear Cuenta 🚀</h2>
-                <p>Completá tus datos para empezar</p>
-                
-                <form id="form-register">
-                    <div class="input-group">
-                        <span class="material-icons">person</span>
-                        <input type="text" placeholder="Nombre Completo" required>
-                    </div>
-                    <div class="input-group">
-                        <span class="material-icons">email</span>
-                        <input type="email" placeholder="Email" required>
-                    </div>
-                    <div class="input-group">
-                        <span class="material-icons">lock</span>
-                        <input type="password" placeholder="Contraseña" required>
-                    </div>
-                    <div class="input-group">
-                        <span class="material-icons">lock</span>
-                        <input type="password" placeholder="Repetir Contraseña" required>
-                    </div>
-                    
-                    <button type="submit" class="btn-auth">REGISTRARME</button>
-                </form>
+                <!-- Panel: Login -->
+                <div class="auth-tab-panel active" id="panel-login">
 
-                <div class="auth-switch">
-                    <p>¿Ya tenés cuenta? <a href="#" id="show-login">Iniciar Sesión</a></p>
+                    <!-- Aviso sesión activa (se muestra solo si ya hay sesión) -->
+                    <div id="aviso-sesion-activa" style="display:none; background:#EBF8FF; border:1px solid #90CDF4; border-radius:10px; padding:14px; margin-bottom:18px; font-size:0.88rem; color:#2B6CB0;">
+                        <strong>📌 Ya hay una sesión iniciada.</strong><br>
+                        Si querés ingresar con otra cuenta, primero cerrá la sesión actual.
+                        <button onclick="cerrarSesionTotal()"
+                            style="display:block;margin-top:10px;background:#E53E3E;color:white;border:none;border-radius:6px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:0.82rem;">
+                            <span class="material-icons" style="font-size:0.9rem;vertical-align:middle;">logout</span>
+                            Cerrar sesión actual
+                        </button>
+                    </div>
+
+                    <!-- Vista normal de login -->
+                    <div id="vista-login">
+                        <h2 style="margin-bottom:6px;">¡Hola de nuevo! 👋</h2>
+                        <p style="color:#718096;margin-bottom:20px;font-size:0.95rem;">Ingresá con tu <strong>DNI</strong> o email, y tu contraseña.</p>
+
+                        <!-- Error de login -->
+                        <div id="login-error-msg" style="display:none; background:#FFF5F5; border:1px solid #FC8181;
+                             color:#C53030; border-radius:8px; padding:10px 14px; font-size:0.88rem; margin-bottom:14px;"></div>
+
+                        <form id="form-login">
+                            <div class="input-group">
+                                <span class="material-icons">person</span>
+                                <input type="text" id="login-email" placeholder="DNI o Email"
+                                       autocomplete="username" autocorrect="off" autocapitalize="off"
+                                       inputmode="text">
+                            </div>
+                            <div class="input-group">
+                                <span class="material-icons">lock</span>
+                                <input type="password" id="login-pass" placeholder="Tu Contraseña"
+                                       autocomplete="current-password">
+                            </div>
+                            <button type="submit" class="btn-auth" style="margin-top:8px;">INGRESAR</button>
+                        </form>
+
+                        <div style="margin-top:16px;text-align:center;">
+                            <a href="#" onclick="mostrarRecuperacion();return false;"
+                               style="font-size:0.85rem;color:#718096;text-decoration:underline;text-underline-offset:2px;">
+                                ¿Olvidaste tu contraseña?
+                            </a>
+                        </div>
+
+                        <p style="margin-top:12px;text-align:center;font-size:0.88rem;color:#718096;">
+                            ¿No tenés cuenta? 
+                            <a href="#" onclick="switchTab('solicitud');return false;" style="color:var(--primary-blue);font-weight:600;">
+                                Solicitá tu acceso
+                            </a>
+                        </p>
+                    </div>
+
+                    <!-- Vista de recuperación de contraseña -->
+                    <div id="vista-recuperacion" style="display:none;">
+                        <button onclick="ocultarRecuperacion()" style="background:none;border:none;cursor:pointer;color:#718096;font-size:0.85rem;display:flex;align-items:center;gap:4px;padding:0;margin-bottom:20px;">
+                            <span class="material-icons" style="font-size:1rem;">arrow_back</span> Volver al login
+                        </button>
+
+                        <h2 style="margin-bottom:6px;">Recuperar contraseña 🔑</h2>
+                        <p style="color:#718096;margin-bottom:20px;font-size:0.95rem;">Ingresá tu email y te mandamos un link para crear una nueva contraseña.</p>
+
+                        <div id="recuperacion-exito" style="display:none;background:#F0FFF4;border:1px solid #9AE6B4;border-radius:10px;padding:16px;margin-bottom:16px;">
+                            <p style="color:#22543D;font-size:0.9rem;display:flex;gap:8px;align-items:flex-start;">
+                                <span class="material-icons" style="color:#38A169;font-size:1.2rem;flex-shrink:0;">check_circle</span>
+                                <span>¡Email enviado! Revisá tu bandeja de entrada (y la carpeta de spam). El link expira en 1 hora.</span>
+                            </p>
+                        </div>
+
+                        <div id="recuperacion-form">
+                            <div class="input-group">
+                                <span class="material-icons">email</span>
+                                <input type="email" id="recuperacion-email" placeholder="Tu email registrado">
+                            </div>
+                            <button onclick="enviarRecuperacion()" class="btn-auth" id="btn-recuperacion" style="margin-top:8px;">
+                                ENVIAR LINK DE RECUPERACIÓN
+                            </button>
+                            <p id="recuperacion-error" style="display:none;margin-top:10px;text-align:center;font-size:0.85rem;color:#E53E3E;"></p>
+                        </div>
+                    </div>
+
                 </div>
-            </div>
 
+                <!-- Panel: Solicitud de acceso -->
+                <div class="auth-tab-panel" id="panel-solicitud">
+                    <h2 style="margin-bottom:6px;">Solicitar Acceso 📋</h2>
+                    <p style="color:#718096;margin-bottom:16px;font-size:0.95rem;">Completá tus datos y Enzo habilitará tu cuenta.</p>
+
+                    <div class="info-solicitud">
+                        <span class="material-icons">info</span>
+                        <span>Este sitio es mayorista B2B. Tu solicitud será revisada y recibirás una respuesta por WhatsApp en menos de 24 hs.</span>
+                    </div>
+
+                    <form id="form-solicitud-acceso">
+                        <div class="solicitud-grid">
+
+                            <!-- Nombre completo — ancho total -->
+                            <div class="form-field">
+                                <label>Nombre y Apellido *</label>
+                                <input type="text" id="sol-nombre" placeholder="Ej: Juan García">
+                            </div>
+
+                            <!-- DNI — identificador único de login -->
+                            <div class="form-field">
+                                <label>DNI *
+                                    <span class="opt-tag" style="color:#718096;font-weight:400;font-size:0.75rem;">
+                                        — Lo usarás para ingresar al sistema
+                                    </span>
+                                </label>
+                                <input type="number" id="sol-dni" placeholder="Ej: 44262703"
+                                       min="1000000" max="99999999">
+                            </div>
+
+                            <!-- Teléfono — ancho total, campo estrella -->
+                            <div class="form-field">
+                                <label>WhatsApp / Teléfono *</label>
+                                <div class="input-icon-wrap">
+                                    <span class="material-icons">phone</span>
+                                    <input type="tel" id="sol-telefono" placeholder="Ej: 3755-123456">
+                                </div>
+                            </div>
+
+                            <!-- Negocio (ancho total) -->
+                            <div class="form-field">
+                                <label>Nombre del Negocio / Empresa *</label>
+                                <input type="text" id="sol-negocio" placeholder="Ej: Ferretería El Tornillo">
+                            </div>
+
+                            <!-- CUIT (ancho total) -->
+                            <div class="form-field">
+                                <label>CUIT *</label>
+                                <input type="text" id="sol-cuit" placeholder="Ej: 20-12345678-9"
+                                       maxlength="13" oninput="formatearCuit(this)">
+                            </div>
+
+                            <!-- Localidad + Dirección en 2 columnas -->
+                            <div class="solicitud-row">
+                                <div class="form-field">
+                                    <label>Ciudad / Localidad *</label>
+                                    <input type="text" id="sol-ciudad" placeholder="Ej: Oberá, Misiones">
+                                </div>
+                                <div class="form-field">
+                                    <label>Dirección *</label>
+                                    <input type="text" id="sol-direccion" placeholder="Ej: Av. San Martín 540">
+                                </div>
+                            </div>
+
+                            <!-- Email — opcional, ancho total -->
+                            <div class="form-field">
+                                <label>Email <span class="opt-tag">(opcional)</span></label>
+                                <input type="email" id="sol-email" placeholder="correo@tunegocio.com">
+                            </div>
+
+                        </div>
+
+                        <!-- Error message box -->
+                        <div id="solicitud-error-msg"
+                             style="display:none; background:#FFF5F5; border:1px solid #FC8181;
+                                    color:#C53030; border-radius:8px; padding:10px 14px;
+                                    font-size:0.88rem; margin-top:12px;"></div>
+
+                        <button type="button" class="btn-auth" style="margin-top:16px;width:100%;"
+                                onclick="enviarSolicitudAcceso()">
+                            <span class="material-icons" style="vertical-align:middle;font-size:1.1rem;">send</span>
+                            ENVIAR SOLICITUD
+                        </button>
+                    </form>
+
+                    <p style="margin-top:16px;text-align:center;font-size:0.88rem;color:#718096;">
+                        ¿Ya tenés cuenta habilitada?
+                        <a href="#" onclick="switchTab('login');return false;" style="color:var(--primary-blue);font-weight:600;">
+                            Iniciá sesión
+                        </a>
+                    </p>
+                </div>
+
+            </div>
         </div>
-    </div>
 
+        <!-- ══════════════════════════════════════════
+             DASHBOARD (visible si está logueado)
+        ══════════════════════════════════════════ -->
+        <div class="user-dashboard hidden" id="user-dashboard">
+
+            <!-- Aviso si está pendiente de aprobación -->
+            <div id="pendiente-aprobacion-box">
+                <strong>⏳ Tu cuenta está pendiente de aprobación.</strong><br>
+                Enzo revisará tus datos y te contactará pronto. Mientras tanto podés explorar el catálogo pero los precios estarán ocultos.
+            </div>
+
+            <!-- Header del perfil -->
+            <div class="dashboard-header">
+                <div class="user-avatar-large" id="profile-pic">
+                    <span class="material-icons">person</span>
+                </div>
+                <div class="user-welcome">
+                    <span class="badge-vip" id="badge-estado">CLIENTE VIP</span>
+                    <h2 id="profile-name">Cargando...</h2>
+                    <p id="profile-email">...</p>
+                </div>
+            </div>
+
+            <!-- Overlay y modal editar perfil -->
+            <div class="modal-overlay" id="modal-overlay"></div>
+
+            <div class="modal-window" id="modal-editar-perfil">
+                <div class="modal-header">
+                    <h3>✏️ Editar Perfil</h3>
+                    <button class="modal-close" onclick="cerrarModalPerfil()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-editar-perfil">
+                        <div class="edit-photo-container">
+                            <img id="preview-edit-perfil" class="img-edit-preview" src="https://via.placeholder.com/150">
+                            <label for="edit-foto" class="custom-file-upload">
+                                <span class="material-icons">photo_camera</span> Cambiar Foto
+                            </label>
+                            <input type="file" id="edit-foto" accept="image/*" style="display:none;" onchange="previsualizarEdicion(this)">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight:bold;color:#4A5568;margin-bottom:5px;display:block;">Nombre Completo</label>
+                            <input type="text" id="edit-nombre" class="modal-input" placeholder="Tu nombre...">
+                        </div>
+                        <button type="submit" class="btn-save">GUARDAR CAMBIOS</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Cards del dashboard -->
+            <div class="dashboard-grid">
+
+                <!-- Mis Pedidos -->
+                <div class="dash-card" onclick="toggleSeccion('seccion-pedidos', this)">
+                    <span class="material-icons" style="color:#3182CE;">shopping_bag</span>
+                    <h3>Mis Pedidos</h3>
+                    <p>Historial de compras</p>
+                    <small>VER PEDIDOS <span class="material-icons" style="font-size:1rem;vertical-align:middle;">chevron_right</span></small>
+                </div>
+
+                <!-- Favoritos -->
+                <div class="dash-card" onclick="toggleSeccion('seccion-favoritos', this)">
+                    <span class="material-icons" style="color:#E53E3E;">favorite</span>
+                    <h3>Favoritos</h3>
+                    <p>Tus productos guardados</p>
+                    <small>VER FAVORITOS <span class="material-icons" style="font-size:1rem;vertical-align:middle;">chevron_right</span></small>
+                </div>
+
+                <!-- Editar perfil -->
+                <div class="dash-card active-card" onclick="abrirEditarPerfil()">
+                    <span class="material-icons">manage_accounts</span>
+                    <h3>Mis Datos</h3>
+                    <p>Editar nombre y foto</p>
+                    <small>EDITAR PERFIL <span class="material-icons" style="font-size:1rem;vertical-align:middle;">edit</span></small>
+                </div>
+            </div>
+
+            <!-- Sección Mis Pedidos (expandible) -->
+            <div id="seccion-pedidos">
+                <h3 style="margin-bottom:14px;font-size:1.1rem;color:#2D3748;">
+                    <span class="material-icons" style="vertical-align:middle;color:#3182CE;">shopping_bag</span>
+                    Mis Pedidos
+                </h3>
+                <div id="lista-pedidos">
+                    <p style="color:#718096;text-align:center;padding:20px;">Cargando pedidos...</p>
+                </div>
+            </div>
+
+            <!-- Sección Favoritos (expandible) -->
+            <div id="seccion-favoritos">
+                <h3 style="margin-bottom:14px;font-size:1.1rem;color:#2D3748;">
+                    <span class="material-icons" style="vertical-align:middle;color:#E53E3E;">favorite</span>
+                    Mis Favoritos
+                </h3>
+                <div id="lista-favoritos">
+                    <p style="color:#718096;text-align:center;padding:20px;">Cargando favoritos...</p>
+                </div>
+            </div>
+
+            <button onclick="cerrarSesionTotal()" class="btn-logout" style="margin-top:24px;">
+                <span class="material-icons">logout</span> CERRAR SESIÓN
+            </button>
+        </div>
+
+    </div><!-- /auth-container -->
+
+    <!-- ══════════════════════════════════════════
+         CARRITO
+    ══════════════════════════════════════════ -->
     <div class="cart-overlay" id="cart-overlay"></div>
     <div class="cart-drawer" id="cart-drawer">
         <div class="cart-header">
-            <h3>Tu Carrito <span id="cart-count-header">(0)</span></h3>
-            <button class="close-cart-btn" id="close-cart-btn"><span class="material-icons">close</span></button>
+            <h3 id="cart-title-step">Tu Carrito <span id="cart-count-header">(0)</span></h3>
+            <button class="close-cart-btn" id="close-cart-btn">
+                <span class="material-icons">close</span>
+            </button>
         </div>
         <div class="cart-items" id="cart-items-container"></div>
         <div class="cart-footer">
-            <div class="cart-total"><span>Total:</span><span id="cart-total-price">$0</span></div>
-            <button class="btn-checkout">INICIAR COMPRA</button>
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cart-total-price">$0</span>
+            </div>
+            <button class="btn-checkout" id="btn-next-step">CONTINUAR AL ENVÍO</button>
+            <button class="btn-prev" id="btn-prev-step" style="display:none;">← Volver</button>
             <button class="btn-clear" id="btn-clear-cart">Vaciar Carrito</button>
+        </div>
+        <!-- Pasos del checkout -->
+        <div id="checkout-step-1" style="display:none;"></div>
+        <div id="checkout-step-2" style="display:none;padding:0 16px;">
+            <div class="form-group"><label>Nombre completo *</label><input type="text" id="chk-nombre" class="modal-input" placeholder="Tu nombre"></div>
+            <div class="form-group"><label>Teléfono *</label><input type="text" id="chk-telefono" class="modal-input" placeholder="Tu teléfono"></div>
+            <div class="form-group"><label>Dirección *</label><input type="text" id="chk-direccion" class="modal-input" placeholder="Calle y número"></div>
+            <div class="form-group"><label>Localidad</label><input type="text" id="chk-localidad" class="modal-input" placeholder="Ciudad"></div>
+            <div class="form-group"><label>Código Postal</label><input type="text" id="chk-cp" class="modal-input" placeholder="CP"></div>
+            <div class="form-group"><label>Método de envío</label>
+                <select id="chk-envio" class="modal-input">
+                    <option>Retiro en Depósito (Oberá)</option>
+                    <option>Envío por Expreso (a cargo del cliente)</option>
+                    <option>Envío propio Enzo (consultar zona)</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Método de pago</label>
+                <select id="chk-pago" class="modal-input">
+                    <option>Efectivo (mejor precio)</option>
+                    <option>Transferencia Bancaria</option>
+                    <option>Cheque (a convenir)</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Notas adicionales</label><textarea id="chk-notas" class="modal-input" rows="2" placeholder="Aclaraciones..."></textarea></div>
+        </div>
+        <div id="checkout-step-3" style="display:none;padding:0 16px;">
+            <p style="font-size:0.9rem;color:#4A5568;margin-bottom:12px;">Al confirmar se generará el pedido y te llevaremos a WhatsApp para coordinar con Enzo.</p>
+            <label style="display:flex;gap:8px;align-items:flex-start;font-size:0.85rem;color:#4A5568;cursor:pointer;">
+                <input type="checkbox" id="chk-terminos" style="margin-top:3px;">
+                Acepto los <a href="legales.html" target="_blank" style="color:var(--primary-blue);">Términos y Condiciones</a>
+            </label>
         </div>
     </div>
 
@@ -119,46 +611,201 @@
         <span id="toast-message">Mensaje</span>
     </div>
 
+    <!-- ══════════════════════════════════════════
+         SCRIPTS — Firebase (sin duplicados)
+    ══════════════════════════════════════════ -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <script src="script.js"></script>
-    
+
     <script>
-        // Lógica simple para cambiar entre login y registro visualmente
-        const loginBox = document.getElementById('login-box');
-        const registerBox = document.getElementById('register-box');
-        const showRegisterBtn = document.getElementById('show-register');
-        const showLoginBtn = document.getElementById('show-login');
+        /* ── Recuperación de contraseña ── */
+        function mostrarRecuperacion() {
+            document.getElementById('vista-login').style.display = 'none';
+            document.getElementById('vista-recuperacion').style.display = 'block';
+            // Pre-rellenar el email si ya lo escribió en el login
+            const emailLogin = document.getElementById('login-email').value.trim();
+            if (emailLogin) document.getElementById('recuperacion-email').value = emailLogin;
+        }
 
-        // Ir al registro
-        showRegisterBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            loginBox.classList.add('hidden');
-            registerBox.classList.remove('hidden');
+        function ocultarRecuperacion() {
+            document.getElementById('vista-recuperacion').style.display = 'none';
+            document.getElementById('vista-login').style.display = 'block';
+            // Resetear estado del panel de recuperación
+            document.getElementById('recuperacion-exito').style.display = 'none';
+            document.getElementById('recuperacion-form').style.display = 'block';
+            document.getElementById('recuperacion-error').style.display = 'none';
+        }
+
+        async function enviarRecuperacion() {
+            const email  = document.getElementById('recuperacion-email').value.trim();
+            const btn    = document.getElementById('btn-recuperacion');
+            const errEl  = document.getElementById('recuperacion-error');
+            errEl.style.display = 'none';
+
+            if (!email) {
+                errEl.textContent = 'Por favor ingresá tu email.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            btn.textContent = 'Enviando...';
+            btn.disabled = true;
+
+            try {
+                await firebase.auth().sendPasswordResetEmail(email);
+                // Mostrar mensaje de éxito y ocultar el form
+                document.getElementById('recuperacion-form').style.display = 'none';
+                document.getElementById('recuperacion-exito').style.display = 'block';
+            } catch (error) {
+                let msg = 'Ocurrió un error. Intentá de nuevo.';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
+                    msg = 'No encontramos una cuenta con ese email. Verificá que sea el correcto.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    msg = 'Demasiados intentos. Esperá unos minutos y volvé a intentar.';
+                }
+                errEl.textContent = msg;
+                errEl.style.display = 'block';
+                btn.textContent = 'ENVIAR LINK DE RECUPERACIÓN';
+                btn.disabled = false;
+            }
+        }
+
+        /* ── Tabs login / solicitud ── */
+        function switchTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-tab-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            document.getElementById('panel-' + tab).classList.add('active');
+        }
+
+        /* Auto-switch si la URL tiene ?tab=solicitud */
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('tab') === 'solicitud') switchTab('solicitud');
+
+            /* Mostrar aviso si hay sesión activa al abrir la página */
+            firebase.auth().onAuthStateChanged((user) => {
+                const aviso = document.getElementById('aviso-sesion-activa');
+                if (!aviso) return;
+                // Solo mostrar si auth-forms está visible (no logueado en dashboard)
+                const authForms = document.getElementById('auth-forms');
+                if (user && authForms && !authForms.classList.contains('hidden')) {
+                    aviso.style.display = 'block';
+                }
+            });
         });
 
-        // Ir al login
-        showLoginBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            registerBox.classList.add('hidden');
-            loginBox.classList.remove('hidden');
-        });
+        /* ── Previsualizar foto en modal edición ── */
+        function previsualizarEdicion(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => document.getElementById('preview-edit-perfil').src = e.target.result;
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
 
-        // Simulación de Login (Frontend Puro)
-        document.getElementById('form-login').addEventListener('submit', (e) => {
-            e.preventDefault();
-            // Aquí iría la conexión con Backend. Por ahora simulamos:
-            
-            // 1. Guardamos una "bandera" en la memoria
-            localStorage.setItem('usuarioLogueado', 'true');
-            localStorage.setItem('nombreUsuario', 'Enzo'); // Simulado
+        /* ── Cerrar modal perfil ── */
+        function cerrarModalPerfil() {
+            document.getElementById('modal-editar-perfil').classList.remove('active');
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
 
-            // 2. Mostramos éxito
-            mostrarNotificacion("¡Bienvenido Enzo!");
+        /* ── Toggle secciones del dashboard ── */
+        function toggleSeccion(id, card) {
+            const seccion = document.getElementById(id);
+            const visible = seccion.style.display === 'block';
+            // Cerrar todas
+            document.querySelectorAll('#seccion-pedidos, #seccion-favoritos').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.dash-card').forEach(c => c.classList.remove('active-card'));
+            if (!visible) {
+                seccion.style.display = 'block';
+                card.classList.add('active-card');
+                if (id === 'seccion-pedidos') cargarMisPedidos();
+                if (id === 'seccion-favoritos') cargarMisFavoritos();
+            }
+        }
 
-            // 3. Redirigimos al inicio después de 1.5 seg
-            setTimeout(() => {
-                window.location.href = "index.html";
-            }, 1500);
-        });
+        /* ── Cargar pedidos del usuario logueado ── */
+        async function cargarMisPedidos() {
+            const lista = document.getElementById('lista-pedidos');
+            const user  = firebase.auth().currentUser;
+            if (!user) { lista.innerHTML = '<p style="color:#718096;text-align:center;">Iniciá sesión para ver tus pedidos.</p>'; return; }
+
+            try {
+                const snap = await firebase.firestore()
+                    .collection('pedidos')
+                    .where('emailUsuario', '==', user.email)
+                    .orderBy('fecha', 'desc')
+                    .limit(20)
+                    .get();
+
+                if (snap.empty) {
+                    lista.innerHTML = '<p style="color:#718096;text-align:center;padding:20px;">Todavía no realizaste pedidos.</p>';
+                    return;
+                }
+
+                lista.innerHTML = '';
+                snap.forEach(doc => {
+                    const d     = doc.data();
+                    const clase = { pendiente: 'estado-pendiente', confirmado: 'estado-confirmado', cancelado: 'estado-cancelado', despachado: 'estado-despachado' }[d.estado] || 'estado-pendiente';
+                    const items = (d.items || []).map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
+                    lista.innerHTML += `
+                        <div class="pedido-card">
+                            <div class="pedido-header">
+                                <span>#${doc.id.slice(0,6).toUpperCase()} — ${d.fechaString || ''}</span>
+                                <span class="estado-badge ${clase}">${(d.estado || 'pendiente').toUpperCase()}</span>
+                            </div>
+                            <p style="color:#4A5568;font-size:0.85rem;margin-bottom:6px;">${items}</p>
+                            <strong style="color:#2D3748;">Total: $${parseInt(d.total || 0).toLocaleString('es-AR')}</strong>
+                        </div>`;
+                });
+            } catch (err) {
+                lista.innerHTML = '<p style="color:#E53E3E;">Error al cargar pedidos. Intentá de nuevo.</p>';
+                console.error(err);
+            }
+        }
+
+        /* ── Cargar favoritos del usuario logueado ── */
+        async function cargarMisFavoritos() {
+            const lista = document.getElementById('lista-favoritos');
+            const user  = firebase.auth().currentUser;
+            if (!user) { lista.innerHTML = '<p style="color:#718096;text-align:center;">Iniciá sesión para ver tus favoritos.</p>'; return; }
+
+            try {
+                const snap = await firebase.firestore()
+                    .collection('usuarios').doc(user.uid)
+                    .collection('favoritos')
+                    .get();
+
+                if (snap.empty) {
+                    lista.innerHTML = `<p style="color:#718096;text-align:center;padding:20px;">
+                        No tenés favoritos guardados.<br>
+                        <a href="productos.html" style="color:var(--primary-blue);font-weight:600;">Explorar productos →</a>
+                    </p>`;
+                    return;
+                }
+
+                lista.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">';
+                snap.forEach(doc => {
+                    const f = doc.data();
+                    lista.innerHTML += `
+                        <a href="detalle.html?id=${doc.id}" style="text-decoration:none;color:inherit;">
+                            <div style="background:#F7FAFC;border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;text-align:center;padding-bottom:8px;">
+                                <img src="${f.imagen}" alt="${f.nombre}" style="width:100%;height:100px;object-fit:contain;padding:8px;" loading="lazy">
+                                <p style="font-size:0.8rem;color:#2D3748;padding:0 8px;font-weight:600;">${f.nombre}</p>
+                                <span class="material-icons" style="color:#E53E3E;font-size:1rem;">favorite</span>
+                            </div>
+                        </a>`;
+                });
+                lista.innerHTML += '</div>';
+            } catch (err) {
+                lista.innerHTML = '<p style="color:#E53E3E;">Error al cargar favoritos.</p>';
+                console.error(err);
+            }
+        }
     </script>
 </body>
 </html>
