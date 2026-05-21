@@ -3651,3 +3651,15 @@ window.mostrarSeccion = function(seccion) {
         cargarSolicitudesPendientes();
     }
 };
+
+//pasos para subir este repositorio a github:
+//1. git init
+//2. git add .
+//3. git commit -m "Primer commit: código base del panel admin"
+//4. Crear repositorio en GitHub (sin README, .gitignore ni licencia)
+//5. git remote add origin <URL_DEL_REPOSITORIO>
+//6. git push -u origin master -> o git push -u origin main (dependiendo del nombre de la rama principal)
+// Luego de esto, cada vez que quieras subir cambios:
+//1. git add .
+//2. git commit -m "Descripción de los cambios realizados"
+//3. git push
