@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /productos.html
+Allow: /detalle.html
+Allow: /faq.html
+Allow: /legales.html
+Allow: /cuenta.html
+Disallow: /admin.html
+Disallow: /admin.js
+
+Sitemap: https://enzodistribuciones.com/sitemap.xml
+
+# Crawl-delay para bots pesados
+User-agent: AhrefsBot
+Crawl-delay: 10
+User-agent: SemrushBot
+Crawl-delay: 10

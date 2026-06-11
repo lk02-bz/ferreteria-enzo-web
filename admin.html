@@ -31,10 +31,7 @@
      BODY
      ============================================================ -->
 <body>
-
-    <!-- ============================================================
-         PANTALLA DE LOGIN
-         ============================================================ -->
+    <!-- ════ LOGIN SCREEN ════ -->
     <div class="login-screen" id="login-screen">
         <div class="auth-box" style="max-width: 400px; width: 100%;">
 
@@ -60,77 +57,151 @@
 
         </div>
     </div>
-    <!-- FIN login-screen -->
 
+    <!-- ════ NUEVO LAYOUT: SIDEBAR + MAIN ════ -->
+    <div class="admin-shell" id="dashboard-screen">
 
-    <!-- ============================================================
-         PANTALLA DEL PANEL (DASHBOARD)
-         ============================================================ -->
-    <div class="dashboard-screen" id="dashboard-screen">
-
-        <!-- Barra de Navegación Superior -->
-        <nav class="admin-nav">
-            <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
-                <h3>PANEL DE CONTROL</h3>
-                <div style="display: flex; gap: 20px; align-items: center;">
-                    <span id="user-email-display" style="font-size: 0.9rem; opacity: 0.8;"></span>
-                    <button onclick="logout()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 15px; border-radius: 20px; cursor: pointer;">Salir</button>
+        <!-- ── SIDEBAR ──────────────────────────────────────── -->
+        <aside class="sidebar" id="admin-sidebar">
+            <div class="sidebar-brand">
+                <img src="logo-empresa.png" alt="Enzo Distribuciones" class="sidebar-logo-img" onerror="this.style.display='none'">
+                <div class="sidebar-brand-text">
+                    <span class="sidebar-brand-name">Enzo Distribuciones</span>
+                    <span class="sidebar-brand-sub">Panel Admin</span>
                 </div>
             </div>
-        </nav>
 
-        <!-- Contenedor principal del Admin -->
-        <div class="admin-container">
-                           <!-- Grid de tarjetas estadísticas -->
-                    <div id="admin-dashboard-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); border-left: 5px solid #38A169;">
-                        <div style="color: #718096; font-size: 0.9rem; font-weight: bold; text-transform: uppercase;">Ingresos (Completados)</div>
-                        <div id="stat-ingresos" style="font-size: 1.8rem; font-weight: 900; color: #2D3748; margin-top: 5px;">$0</div>
+            <nav class="sidebar-nav">
+                <a class="sidebar-nav-item active" data-seccion="dashboard" onclick="mostrarSeccion('dashboard')">
+                    <span class="material-icons">dashboard</span>
+                    <span>Inicio</span>
+                </a>
+                <a class="sidebar-nav-item" data-seccion="pedidos" onclick="mostrarSeccion('pedidos')">
+                    <span class="material-icons">inbox</span>
+                    <span>Pedidos</span>
+                    <span id="badge-pedidos" class="sidebar-badge" style="display:none;">0</span>
+                </a>
+                <a class="sidebar-nav-item" data-seccion="productos" onclick="mostrarSeccion('productos')">
+                    <span class="material-icons">inventory_2</span>
+                    <span>Productos</span>
+                </a>
+                <a class="sidebar-nav-item" data-seccion="usuarios" onclick="mostrarSeccion('usuarios')">
+                    <span class="material-icons">group</span>
+                    <span>Clientes</span>
+                    <span id="badge-solicitudes" class="sidebar-badge sidebar-badge--red" style="display:none;">0</span>
+                </a>
+                <a class="sidebar-nav-item" data-seccion="reportes" onclick="mostrarSeccion('reportes')">
+                    <span class="material-icons">mail_outline</span>
+                    <span>Mensajes</span>
+                    <span id="badge-reportes" class="sidebar-badge sidebar-badge--blue" style="display:none;">0</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <span class="material-icons" style="font-size:1.1rem;opacity:.6;">account_circle</span>
+                <span id="user-email-display" class="sidebar-user-email"></span>
+                <button onclick="auth.signOut()" class="sidebar-signout" title="Cerrar sesión">
+                    <span class="material-icons">logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ── MAIN CONTENT ──────────────────────────────────── -->
+        <main class="admin-main">
+
+            <!-- ── HEADER DE PÁGINA ──────────────────── -->
+            <header class="admin-page-header">
+                <button class="sidebar-toggle" onclick="document.getElementById('admin-sidebar').classList.toggle('open')" title="Menú">
+                    <span class="material-icons">menu</span>
+                </button>
+                <span class="admin-page-title" id="admin-page-title">Inicio</span>
+                <div class="admin-page-actions" id="admin-page-actions"></div>
+            </header>
+
+            <!-- ══ SECCIÓN: INICIO / DASHBOARD ══════════════════════════ -->
+            <div id="seccion-dashboard" class="admin-section">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <span class="kpi-icon" style="background:#EBF8FF;color:#2B6CB0"><span class="material-icons">trending_up</span></span>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Ingresos del mes</div>
+                            <div class="kpi-value" id="stat-ingresos">$0</div>
+                        </div>
                     </div>
-                    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); border-left: 5px solid #DD6B20;">
-                        <div style="color: #718096; font-size: 0.9rem; font-weight: bold; text-transform: uppercase;">Pedidos Pendientes</div>
-                        <div id="stat-pendientes" style="font-size: 1.8rem; font-weight: 900; color: #2D3748; margin-top: 5px;">0</div>
+                    <div class="kpi-card" style="cursor:pointer" onclick="mostrarSeccion('pedidos')">
+                        <span class="kpi-icon" style="background:#FAEEDA;color:#854F0B"><span class="material-icons">inbox</span></span>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Pedidos pendientes</div>
+                            <div class="kpi-value" id="stat-pendientes">0</div>
+                        </div>
                     </div>
-                    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); border-left: 5px solid #3182CE;">
-                        <div style="color: #718096; font-size: 0.9rem; font-weight: bold; text-transform: uppercase;">Total Catálogo</div>
-                        <div id="stat-productos" style="font-size: 1.8rem; font-weight: 900; color: #2D3748; margin-top: 5px;">0</div>
+                    <div class="kpi-card" style="cursor:pointer" onclick="mostrarSeccion('productos')">
+                        <span class="kpi-icon" style="background:#E1F5EE;color:#0F6E56"><span class="material-icons">inventory_2</span></span>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Total productos</div>
+                            <div class="kpi-value" id="stat-productos">0</div>
+                        </div>
                     </div>
-                    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); border-left: 5px solid #E53E3E;">
-                        <div style="color: #718096; font-size: 0.9rem; font-weight: bold; text-transform: uppercase;">Agotados (Sin Stock)</div>
-                        <div id="stat-agotados" style="font-size: 1.8rem; font-weight: 900; color: #E53E3E; margin-top: 5px;">0</div>
+                    <div class="kpi-card">
+                        <span class="kpi-icon" style="background:#FCEBEB;color:#A32D2D"><span class="material-icons">warning_amber</span></span>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Stock crítico</div>
+                            <div class="kpi-value" id="stat-agotados" style="color:#C53030">0</div>
+                        </div>
                     </div>
                 </div>
-                <div class="tabs-wrapper" style="margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
 
-                    <!-- Botón tab: Productos -->
-                    <button class="btn-tab active" onclick="mostrarSeccion('productos')">📦 PRODUCTOS</button>
-
-                    <!-- FIN admin-dashboard-stats -->
-                    <button class="btn-tab" onclick="mostrarSeccion('reportes')">
-                        💡 BUZÓN
-                        <span id="badge-reportes" class="badge-counter" style="display:none; background-color: #3182CE;">0</span>
-                    </button>
-                    <!-- Botón tab: Pedidos -->
-                    <button class="btn-tab" onclick="mostrarSeccion('pedidos')">
-                        📄 PEDIDOS RECIBIDOS
-                        <span id="badge-pedidos" class="badge-counter" style="display:none;">0</span>
-                    </button>
-
-                    <!-- Botón tab: Usuarios -->
-                    <button class="btn-tab" onclick="mostrarSeccion('usuarios')">
-                        👥 USUARIOS
-                        <span id="badge-solicitudes" class="badge-counter" style="display:none; background-color:#E53E3E;">0</span>
-                    </button>
-
+                <div class="dashboard-grid">
+                    <div class="dash-card">
+                        <div class="dash-card-header">
+                            <h3>Acciones rápidas</h3>
+                        </div>
+                        <div class="quick-actions">
+                            <button class="qa-btn" onclick="mostrarSeccion('pedidos')">
+                                <span class="material-icons">inbox</span>
+                                <span>Ver pedidos</span>
+                            </button>
+                            <button class="qa-btn" onclick="mostrarSeccion('usuarios')">
+                                <span class="material-icons">group</span>
+                                <span>Ver clientes</span>
+                            </button>
+                            <button class="qa-btn" onclick="mostrarSeccion('productos')">
+                                <span class="material-icons">add_box</span>
+                                <span>Nuevo producto</span>
+                            </button>
+                            <button class="qa-btn" onclick="abrirPuntoDeVenta()">
+                                <span class="material-icons">point_of_sale</span>
+                                <span>Venta manual</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="dash-card-header">
+                            <h3>Estado del sistema</h3>
+                        </div>
+                        <div class="system-status">
+                            <div class="status-row">
+                                <span class="status-dot green"></span>
+                                <span>Catálogo online</span>
+                            </div>
+                            <div class="status-row">
+                                <span class="status-dot green"></span>
+                                <span>Firestore conectado</span>
+                            </div>
+                            <div class="status-row">
+                                <span class="status-dot green"></span>
+                                <span>Autenticación activa</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            <!-- --------------------------------------------------------
-                 Pestañas de Navegación + Stats del Dashboard
-            -------------------------------------------------------- -->
+            </div>
+            <!-- FIN seccion-dashboard -->
 
-            <!-- FIN bloque de pestañas -->
+            <!-- ══ SECCIÓN: REPORTES ══════════════════════════ -->
             <div id="seccion-reportes" style="display: none;">
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-left: 5px solid #D69E2E; padding-left: 15px;">
+                <div class="section-header-bar">
                     <h2 style="margin: 0; color: var(--text-dark); display: flex; align-items: center; gap: 8px;">
                         <span class="material-icons" style="color: #D69E2E;">lightbulb</span>
                         Bandeja de Entrada (Buzón)
@@ -163,6 +234,8 @@
             <!-- ====================================================
                  SECCIÓN: PRODUCTOS
                  ==================================================== -->
+
+            <!-- ══ SECCIÓN: PRODUCTOS ══════════════════════════ -->
             <div id="seccion-productos">
 
                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: var(--shadow-sm); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border-left: 5px solid #3182CE;">
@@ -186,8 +259,25 @@
                             PLANTILLA GOOGLE SHEETS
                         </a>
 
+                        <!-- Selector de modo de importación -->
+                        <div style="display:flex;flex-direction:column;gap:6px;background:#F7FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:10px 14px;">
+                            <span style="font-size:0.72rem;font-weight:700;color:#4A5568;text-transform:uppercase;letter-spacing:.04em;">Modo de carga:</span>
+                            <div style="display:flex;gap:10px;">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem;font-weight:600;color:#22543D;">
+                                    <input type="radio" name="csv-modo" id="csv-modo-nuevo" value="nuevo" checked
+                                           style="accent-color:#38A169;width:15px;height:15px;">
+                                    ✨ Solo nuevos
+                                </label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem;font-weight:600;color:#744210;">
+                                    <input type="radio" name="csv-modo" id="csv-modo-actualizar" value="actualizar"
+                                           style="accent-color:#D69E2E;width:15px;height:15px;">
+                                    🔄 Actualizar todos
+                                </label>
+                            </div>
+                        </div>
+
                         <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
-                        <button type="button" class="btn-auth" style="background: #38A169; border: none; display: flex; align-items: center; gap: 8px; margin: 0;" onclick="document.getElementById('csv-file-input').click();">
+                        <button type="button" class="btn-auth" style="background:#38A169;border:none;display:flex;align-items:center;gap:8px;margin:0;" onclick="document.getElementById('csv-file-input').click();">
                             <span class="material-icons">upload_file</span>
                             SUBIR CSV
                         </button>
@@ -212,9 +302,9 @@
                 </div>
 
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>Inventario</h2>
-                    <button class="btn-hero" onclick="abrirFormulario()">+ NUEVO PRODUCTO</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 20px;">
+                    <h2 style="margin-left: 15px;">Inventario</h2>
+                    <button style="margin-right: 15px;" class="btn-auth btn-new-product" onclick="abrirFormulario()"><span class="material-icons" style="font-size:17px">add</span> Nuevo producto</button>
                 </div>
 
                 <!-- Barra de Búsqueda -->
@@ -229,43 +319,71 @@
                     </div>
                     <select id="admin-cat-filter" onchange="filtrarTabla()" title="Filtrar por categoría">
                         <option value="all">📂 Todas las categorías</option>
+                        <optgroup label="GRIFERÍAS">
+                            <option value="griferia-bano">Baño</option>
+                            <option value="griferia-cocina">Cocina</option>
+                            <option value="griferia-jardin">Jardín</option>
+                            <option value="griferia-repuestos">Repuestos para Grifería</option>
+                            <option value="griferia-accesorios">Accesorios para Instalación</option>
+                        </optgroup>
                         <optgroup label="HERRAMIENTAS">
                             <option value="electricas">Eléctricas</option>
                             <option value="manuales">Manuales</option>
                             <option value="inalambricas">Inalámbricas</option>
-                            <option value="jardineria">Jardinería</option>
-                            <option value="medicion">Medición</option>
+                            <option value="herr-accesorios">Accesorios para Herramientas</option>
+                            <option value="herr-cajas">Cajas Organizadoras</option>
+                            <option value="herr-tanzas">Tanzas de Albañil</option>
                         </optgroup>
-                        <optgroup label="PINTURAS">
-                            <option value="interior/latex">Interior / Látex</option>
-                            <option value="exterior/imper">Exterior / Imper.</option>
-                            <option value="esmaltes sinteticos">Esmaltes</option>
-                            <option value="rodillos">Rodillos y Pinceles</option>
+                        <optgroup label="ILUMINACIÓN">
+                            <option value="ilum-led">Lámparas LED</option>
+                            <option value="ilum-especiales">Lámparas Especiales</option>
+                            <option value="ilum-plafones">Plafones</option>
+                            <option value="ilum-reflectores">Reflectores</option>
+                            <option value="ilum-tubos">Tubos y Listones LED</option>
+                            <option value="ilum-apliques">Apliques</option>
+                            <option value="ilum-colgantes">Luminarias Colgantes</option>
+                            <option value="ilum-exterior">Iluminación Exterior</option>
                         </optgroup>
-                        <optgroup label="PLOMERÍA">
-                            <option value="caños y tubos">Caños y Tubos</option>
-                            <option value="griferia">Grifería</option>
-                            <option value="bombas de agua">Bombas de Agua</option>
-                            <option value="accesorios">Accesorios</option>
+                        <optgroup label="PINTURERÍA">
+                            <option value="pintura-interior">Pinturas Interior y Exterior</option>
+                            <option value="pintura-pinceles">Pinceles y Rodillos</option>
+                            <option value="pintura-lijas">Lijas</option>
+                            <option value="pintura-disolventes">Disolventes</option>
+                            <option value="pintura-imper">Impermeabilizantes</option>
+                            <option value="pintura-aerosol">Pinturas en Aerosol</option>
                         </optgroup>
                         <optgroup label="ELECTRICIDAD">
-                            <option value="cables">Cables</option>
-                            <option value="iluminacion">Iluminación LED</option>
-                            <option value="tomas e interruptores">Tomas e Interr.</option>
-                            <option value="protecciones">Protecciones</option>
+                            <option value="cables">Cables Eléctricos</option>
+                            <option value="protecciones">Protección Eléctrica</option>
+                            <option value="elec-termicas">Térmicas y Disyuntores</option>
+                            <option value="tomas e interruptores">Interruptores y Tomacorrientes</option>
+                            <option value="elec-fichas">Fichas y Adaptadores</option>
+                            <option value="elec-tableros">Tableros Eléctricos</option>
                             <option value="cintas">Cintas Aislantes</option>
                         </optgroup>
                         <optgroup label="BULONERÍA">
                             <option value="tornillos">Tornillos</option>
                             <option value="tuercas y arandelas">Tuercas y Arandelas</option>
-                            <option value="tarugos y fijaciones">Tarugos</option>
+                            <option value="bulones">Bulones</option>
+                            <option value="tarugos y fijaciones">Tarugos y Fijaciones</option>
                             <option value="clavos">Clavos</option>
+                            <option value="remaches">Remaches</option>
                         </optgroup>
-                        <optgroup label="BAZAR">
-                            <option value="utencilios de cocina">Utensilios Cocina</option>
-                            <option value="organizadores y almacenaje">Organizadores</option>
-                            <option value="productos de limpieza">Limpieza</option>
-                            <option value="decoracion de hogar">Decoración Hogar</option>
+                        <optgroup label="SEGURIDAD">
+                            <option value="seguridad-cerraduras">Candados y Cerraduras</option>
+                            <option value="seguridad-camaras">Cámaras de Seguridad</option>
+                            <option value="seguridad-alarmas">Alarmas</option>
+                            <option value="seguridad-guantes">Guantes de Protección</option>
+                            <option value="seguridad-epp">Elementos de Protección Personal</option>
+                            <option value="seguridad-matafuegos">Matafuegos</option>
+                        </optgroup>
+                        <optgroup label="HOGAR">
+                            <option value="hogar-electrodomesticos">Electrodomésticos</option>
+                            <option value="hogar-muebles">Muebles</option>
+                            <option value="hogar-camaras">Cámaras para Hogar</option>
+                            <option value="hogar-organizadores">Organizadores</option>
+                            <option value="productos de limpieza">Productos de Limpieza</option>
+                            <option value="hogar-tanzas">Tanzas para Desmalezadoras</option>
                         </optgroup>
                         <option value="sin categoria">⚠️ Sin Categoría</option>
                     </select>
@@ -342,15 +460,17 @@
             <!-- ====================================================
                  SECCIÓN: PEDIDOS RECIBIDOS
                  ==================================================== -->
+
+            <!-- ══ SECCIÓN: PEDIDOS ══════════════════════════ -->
             <div id="seccion-pedidos" style="display: none;">
 
                 <!-- Encabezado -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-left: 5px solid var(--primary-blue); padding-left: 15px;">
+                <div class="section-header-bar">
                     <h2 style="margin: 0; color: var(--text-dark); display: flex; align-items: center; gap: 8px;">
                         <span class="material-icons" style="color: var(--primary-blue);">inbox</span>
                         Bandeja de Pedidos
                     </h2>
-                    <button class="btn-auth" onclick="abrirPuntoDeVenta()" style="background: #38A169; border: none; margin: 0; display: flex; align-items: center; gap: 5px; padding: 8px 16px; font-size: 0.95rem;">
+                    <button class="btn-auth btn-success" onclick="abrirPuntoDeVenta()">
                         <span class="material-icons">point_of_sale</span> + CREAR PEDIDO MANUAL
                     </button>
                 </div>
@@ -413,9 +533,11 @@
                  SECCIÓN: USUARIOS
                  Solicitudes pendientes + carga manual + aprobados
             ══════════════════════════════════════════════════════ -->
+
+            <!-- ══ SECCIÓN: USUARIOS ══════════════════════════ -->
             <div id="seccion-usuarios" style="display:none;">
 
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-left:5px solid #E53E3E;padding-left:15px;flex-wrap:wrap;gap:10px;">
+                <div class="section-header-bar" style="flex-wrap:wrap;gap:10px;">
                     <h2 style="margin:0;color:#2D3748;display:flex;align-items:center;gap:8px;">
                         <span class="material-icons" style="color:#E53E3E;">group</span>
                         Gestión de Usuarios
@@ -465,12 +587,14 @@
             </div>
             <!-- FIN seccion-usuarios -->
 
+            </div>
+            <!-- FIN seccion-usuarios -->
 
-
-        </div>
-        <!-- FIN admin-container -->
+        </main>
+        <!-- FIN admin-main -->
 
     </div>
+    <!-- FIN admin-shell -->
 
     <!-- ══════════════════════════════════════════════════════
          MODAL: Cargar usuario manualmente
@@ -629,48 +753,78 @@
                         
                         <option value="sin categoria" style="font-weight: bold; color: #E53E3E;">⚠️ Sin Categoría</option>
 
+                        <optgroup label="GRIFERÍAS">
+                            <option value="griferia-bano">Baño</option>
+                            <option value="griferia-cocina">Cocina</option>
+                            <option value="griferia-jardin">Jardín</option>
+                            <option value="griferia-repuestos">Repuestos para Grifería</option>
+                            <option value="griferia-accesorios">Accesorios para Instalación</option>
+                        </optgroup>
+
                         <optgroup label="HERRAMIENTAS">
                             <option value="electricas">Eléctricas</option>
                             <option value="manuales">Manuales</option>
                             <option value="inalambricas">Inalámbricas</option>
-                            <option value="jardineria">Jardinería</option>
-                            <option value="medicion">Medición</option>
+                            <option value="herr-accesorios">Accesorios para Herramientas</option>
+                            <option value="herr-cajas">Cajas Organizadoras</option>
+                            <option value="herr-tanzas">Tanzas de Albañil</option>
                         </optgroup>
 
-                        <optgroup label="PINTURAS">
-                            <option value="interior/latex">Interior / Látex</option>
-                            <option value="exterior/imper">Exterior / Impermeabilizante</option>
-                            <option value="esmaltes sinteticos">Esmaltes Sintéticos</option>
-                            <option value="rodillos">Rodillos y Pinceles</option>
+                        <optgroup label="ILUMINACIÓN">
+                            <option value="ilum-led">Lámparas LED</option>
+                            <option value="ilum-especiales">Lámparas Especiales</option>
+                            <option value="ilum-plafones">Plafones</option>
+                            <option value="ilum-reflectores">Reflectores</option>
+                            <option value="ilum-tubos">Tubos y Listones LED</option>
+                            <option value="ilum-apliques">Apliques</option>
+                            <option value="ilum-colgantes">Luminarias Colgantes</option>
+                            <option value="ilum-exterior">Iluminación Exterior</option>
                         </optgroup>
 
-                        <optgroup label="PLOMERÍA">
-                            <option value="caños y tubos">Caños y Tubos</option>
-                            <option value="griferia">Grifería</option>
-                            <option value="bombas de agua">Bombas de Agua</option>
-                            <option value="accesorios">Accesorios</option>
+                        <optgroup label="PINTURERÍA">
+                            <option value="pintura-interior">Pinturas Interior y Exterior</option>
+                            <option value="pintura-pinceles">Pinceles y Rodillos</option>
+                            <option value="pintura-lijas">Lijas</option>
+                            <option value="pintura-disolventes">Disolventes</option>
+                            <option value="pintura-imper">Impermeabilizantes</option>
+                            <option value="pintura-aerosol">Pinturas en Aerosol</option>
                         </optgroup>
 
                         <optgroup label="ELECTRICIDAD">
-                            <option value="cables">Cables</option>
-                            <option value="iluminacion">Iluminación LED</option>
-                            <option value="tomas e interruptores">Tomas e Interruptores</option>
-                            <option value="protecciones">Protecciones Eléctricas</option>
+                            <option value="cables">Cables Eléctricos</option>
+                            <option value="protecciones">Protección Eléctrica</option>
+                            <option value="elec-termicas">Térmicas y Disyuntores</option>
+                            <option value="tomas e interruptores">Interruptores y Tomacorrientes</option>
+                            <option value="elec-fichas">Fichas y Adaptadores</option>
+                            <option value="elec-tableros">Tableros Eléctricos</option>
                             <option value="cintas">Cintas Aislantes</option>
                         </optgroup>
 
                         <optgroup label="BULONERÍA">
-                            <option value="tornillos">Tornillos Madera / Metal</option>
+                            <option value="tornillos">Tornillos</option>
                             <option value="tuercas y arandelas">Tuercas y Arandelas</option>
+                            <option value="bulones">Bulones</option>
                             <option value="tarugos y fijaciones">Tarugos y Fijaciones</option>
                             <option value="clavos">Clavos</option>
+                            <option value="remaches">Remaches</option>
                         </optgroup>
 
-                        <optgroup label="BAZAR">
-                            <option value="utencilios de cocina">Utensilios de Cocina</option>
-                            <option value="organizadores y almacenaje">Organizadores y Almacenaje</option>
+                        <optgroup label="SEGURIDAD">
+                            <option value="seguridad-cerraduras">Candados y Cerraduras</option>
+                            <option value="seguridad-camaras">Cámaras de Seguridad</option>
+                            <option value="seguridad-alarmas">Alarmas</option>
+                            <option value="seguridad-guantes">Guantes de Protección</option>
+                            <option value="seguridad-epp">Elementos de Protección Personal</option>
+                            <option value="seguridad-matafuegos">Matafuegos</option>
+                        </optgroup>
+
+                        <optgroup label="HOGAR">
+                            <option value="hogar-electrodomesticos">Electrodomésticos</option>
+                            <option value="hogar-muebles">Muebles</option>
+                            <option value="hogar-camaras">Cámaras para Hogar</option>
+                            <option value="hogar-organizadores">Organizadores</option>
                             <option value="productos de limpieza">Productos de Limpieza</option>
-                            <option value="decoracion de hogar">Decoración Hogar</option>
+                            <option value="hogar-tanzas">Tanzas para Desmalezadoras</option>
                         </optgroup>
                     </select>
                 </div>
@@ -892,7 +1046,7 @@
                     <strong>Distribuciones Enzo</strong><br>
                     Depósito Principal:Ushuaia 331, N3361 Oberá, Misiones<br>
                     WhatsApp: +54 9 3755 503213<br>
-                    distribucionesenzo28@gmail.com
+                    distribuidoraenzo28@gmail.com
                 </div>
             </div>
             <div class="print-order-info">
@@ -1107,5 +1261,93 @@
     <!-- Lógica principal del Admin -->
     <script src="admin.js"></script>
 
+
+    <script>
+    // ── SIDEBAR: estado activo + página inicial ───────────────────────────
+    (function() {
+        // Inyectar lógica en mostrarSeccion una vez que el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            const TITLES = {
+                dashboard: 'Inicio',
+                productos: 'Productos',
+                pedidos:   'Pedidos',
+                usuarios:  'Clientes',
+                reportes:  'Mensajes'
+            };
+            const ALL_SECTIONS = ['dashboard','reportes','productos','pedidos','usuarios'];
+            
+            // Guardar referencia a la función original
+            var _origMostrarSeccion = window.mostrarSeccion;
+            
+            window.mostrarSeccion = function(seccion) {
+                // Ocultar todas las secciones incluida dashboard
+                ALL_SECTIONS.forEach(function(s) {
+                    var el = document.getElementById('seccion-' + s);
+                    if (el) el.style.display = 'none';
+                });
+                
+                // Mostrar la sección pedida
+                var target = document.getElementById('seccion-' + seccion);
+                if (target) target.style.display = '';
+                
+                // Llamar la lógica original si existe (para tabs internos, badges, etc.)
+                if (typeof _origMostrarSeccion === 'function') {
+                    _origMostrarSeccion(seccion);
+                }
+                
+                // Sidebar: marcar item activo
+                document.querySelectorAll('.sidebar-nav-item').forEach(function(el) {
+                    el.classList.remove('active');
+                });
+                var navItem = document.querySelector('.sidebar-nav-item[data-seccion="' + seccion + '"]');
+                if (navItem) navItem.classList.add('active');
+                
+                // Actualizar título de página
+                var titleEl = document.getElementById('admin-page-title');
+                if (titleEl) titleEl.textContent = TITLES[seccion] || seccion;
+                
+                // Cerrar sidebar en mobile
+                var sidebar = document.getElementById('admin-sidebar');
+                if (sidebar && window.innerWidth < 768) sidebar.classList.remove('open');
+            };
+            
+            // Mostrar dashboard por defecto cuando carga el admin
+            var dashScreen = document.getElementById('dashboard-screen');
+            if (dashScreen) {
+                var observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(m) {
+                        if (m.target.style.display !== 'none' && m.target.style.display !== '') {
+                            if (!window._dashboardInit) {
+                                window._dashboardInit = true;
+                                // Ocultar todas las secciones excepto dashboard
+                                ['reportes','productos','pedidos','usuarios'].forEach(function(s) {
+                                    var el = document.getElementById('seccion-' + s);
+                                    if (el) el.style.display = 'none';
+                                });
+                                var dash = document.getElementById('seccion-dashboard');
+                                if (dash) dash.style.display = '';
+                                // Tabs: ninguno activo (estamos en dashboard)
+                                document.querySelectorAll('.btn-tab').forEach(function(b) {
+                                    b.classList.remove('active');
+                                });
+                            }
+                        }
+                    });
+                });
+                observer.observe(dashScreen, { attributes: true, attributeFilter: ['style'] });
+            }
+            
+            // Cerrar sidebar al clickear fuera (mobile)
+            document.addEventListener('click', function(e) {
+                var sidebar = document.getElementById('admin-sidebar');
+                if (!sidebar) return;
+                if (window.innerWidth >= 768) return;
+                if (!sidebar.contains(e.target) && !e.target.closest('.sidebar-toggle')) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        });
+    })();
+    </script>
 </body>
 </html>
