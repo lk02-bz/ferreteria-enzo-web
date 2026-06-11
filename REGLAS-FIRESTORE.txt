@@ -1,0 +1,173 @@
+═══════════════════════════════════════════════════════════════════════════
+REGLAS DE SEGURIDAD DE FIRESTORE — ENZO DISTRIBUCIONES
+═══════════════════════════════════════════════════════════════════════════
+
+CÓMO APLICARLAS:
+1. Entrá a https://console.firebase.google.com
+2. Proyecto: distribuidora-enzo
+3. Menú lateral → Firestore Database → pestaña "Reglas" (Rules)
+4. Borrá lo que haya y pegá TODO el bloque que está entre las líneas
+   "----- INICIO REGLAS -----" y "----- FIN REGLAS -----"
+5. Botón "Publicar" (Publish)
+
+IMPORTANTE: antes de publicar, compará con tus reglas actuales. Si tu
+versión actual permite algo que estas no contemplan, avisame para revisar.
+
+═══════════════════════════════════════════════════════════════════════════
+
+----- INICIO REGLAS -----
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper: ¿es el administrador (Enzo)? ──────────────────────────
+    // Debe coincidir EXACTO con el email usado en admin.js y script.js
+    function esAdmin() {
+      return request.auth != null
+          && request.auth.token.email == 'distribuidoraenzo28@gmail.com';
+    }
+
+    // ── PRODUCTOS ──────────────────────────────────────────────────────
+    // Lectura pública: el catálogo se muestra a cualquier visitante.
+    // Escritura: solo el admin, EXCEPTO que un usuario logueado puede
+    // tocar únicamente 'stock' y 'variantes' (el checkout descuenta
+    // stock con transacciones desde el navegador del cliente VIP).
+    match /productos/{prodId} {
+      allow read: if true;
+      allow create, delete: if esAdmin();
+      allow update: if esAdmin()
+        || (request.auth != null
+            && request.resource.data.diff(resource.data)
+               .affectedKeys().hasOnly(['stock', 'variantes']));
+    }
+
+    // ── PEDIDOS ────────────────────────────────────────────────────────
+    // Crear: cualquiera (los visitantes sin cuenta mandan presupuestos).
+    // Leer: el admin ve todo; el cliente solo SUS pedidos (la página
+    // "Mis Pedidos" consulta where emailUsuario == su email).
+    // Modificar/borrar: solo admin (cambia estados, edita, etc.).
+    match /pedidos/{pedidoId} {
+      allow create: if true;
+      allow read: if esAdmin()
+        || (request.auth != null
+            && resource.data.emailUsuario == request.auth.token.email);
+      allow update, delete: if esAdmin();
+    }
+
+    // ── USUARIOS (perfiles de clientes) ────────────────────────────────
+    // Cada usuario lee y edita SOLO su propio documento.
+    // El campo 'aprobado' (que da acceso VIP) solo lo cambia el admin.
+    // El admin puede todo (crea cuentas al aprobar solicitudes).
+    match /usuarios/{userId} {
+      allow read: if esAdmin()
+        || (request.auth != null && request.auth.uid == userId);
+      allow create, delete: if esAdmin();
+      allow update: if esAdmin()
+        || (request.auth != null
+            && request.auth.uid == userId
+            && !request.resource.data.diff(resource.data)
+                .affectedKeys().hasAny(['aprobado', 'dni', 'cuit', 'email']));
+
+      // Favoritos: subcolección privada de cada usuario
+      match /favoritos/{favId} {
+        allow read, write: if esAdmin()
+          || (request.auth != null && request.auth.uid == userId);
+      }
+    }
+
+    // ── LOGIN_INDEX (DNI → email para login) ───────────────────────────
+    // Lectura pública: necesaria ANTES de autenticarse (login por DNI).
+    // Solo debe contener { email } — nunca guardar más datos acá.
+    // Escritura: solo admin (se crea al aprobar una solicitud).
+    match /login_index/{dni} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    // ── SOLICITUDES DE ACCESO ──────────────────────────────────────────
+    // Crear: cualquiera (formulario público "Solicitar Acceso").
+    // Ver/gestionar: solo el admin.
+    match /solicitudes_acceso/{solId} {
+      allow create: if true;
+      allow read, update, delete: if esAdmin();
+    }
+
+    // ── REPORTES (buzón de sugerencias/fallos) ─────────────────────────
+    // Crear: cualquiera (el buzón es público).
+    // Leer/marcar leído/borrar: solo el admin.
+    match /reportes/{repId} {
+      allow create: if true;
+      allow read, update, delete: if esAdmin();
+    }
+
+    // ── CONFIG (versión del catálogo y ajustes) ────────────────────────
+    // Lectura pública (la tienda podría consultar la versión del caché).
+    // Escritura: solo admin.
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    // ── TODO LO DEMÁS: BLOQUEADO ───────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+----- FIN REGLAS -----
+
+═══════════════════════════════════════════════════════════════════════════
+ÍNDICES COMPUESTOS NECESARIOS
+═══════════════════════════════════════════════════════════════════════════
+
+El archivo firestore.indexes.json del proyecto ya declara los 3 índices
+que la página necesita:
+
+  1. pedidos:             emailUsuario (ASC) + fecha (DESC)
+     → lo usa "Mis Pedidos" en cuenta.html
+  2. solicitudes_acceso:  estado (ASC) + fecha (DESC)
+     → lo usa el panel admin
+  3. solicitudes_acceso:  estado (ASC) + fechaAprobacion (DESC)
+     → lo usa el panel admin
+
+CÓMO VERIFICAR QUE EXISTEN:
+  Console Firebase → Firestore Database → pestaña "Índices" (Indexes).
+  Si falta alguno, la forma más fácil de crearlo: usá la función que
+  falla (ej: abrir "Mis Pedidos"), abrí la consola del navegador (F12),
+  y el error de Firestore incluye un LINK directo que crea el índice
+  con un clic.
+
+═══════════════════════════════════════════════════════════════════════════
+NOTAS Y ADVERTENCIAS
+═══════════════════════════════════════════════════════════════════════════
+
+1. EMAIL DEL ADMIN: si algún día cambiás la cuenta de Enzo, tenés que
+   actualizar el email en TRES lugares: estas reglas (función esAdmin),
+   admin.js (línea ~89, correoAdministrador) y script.js (línea ~731,
+   ADMIN_EMAIL) + cuenta.html (línea ~818, const ADMIN).
+
+2. PRECIOS VISIBLES: aunque la página oculta los precios a los no-VIP,
+   los precios viajan igual al navegador de cualquier visitante (están
+   dentro de los documentos de 'productos', que son de lectura pública).
+   Ocultarlos de verdad requeriría reestructurar la base (ej: precios en
+   una colección aparte solo legible por usuarios aprobados). Decisión
+   de negocio pendiente — no lo resuelven estas reglas.
+
+3. LOGIN POR DNI: la colección login_index es pública por necesidad
+   (se consulta antes del login). Cualquiera que conozca un DNI puede
+   obtener el email asociado. Mitigación: que los documentos contengan
+   SOLO el campo email, nada más.
+
+4. STOCK DESDE EL CLIENTE: la regla de 'productos' permite que cualquier
+   usuario logueado modifique stock/variantes (lo necesita el checkout).
+   Un usuario malicioso logueado podría alterar stock a mano. Si esto
+   preocupa, la solución correcta es mover el descuento de stock a una
+   Cloud Function (requiere plan Blaze). Para el tamaño actual del
+   negocio, el riesgo es bajo (solo clientes aprobados por Enzo).
+
+5. CAMPOS PROTEGIDOS DEL PERFIL: el usuario puede editar su nombre,
+   teléfono, dirección, localidad, CP y foto, pero NO puede cambiarse
+   a sí mismo 'aprobado' (VIP), ni su DNI/CUIT/email registrados.
+
+6. RESPALDO: antes de publicar reglas nuevas, copiá las actuales a un
+   archivo de texto por si hay que volver atrás.
