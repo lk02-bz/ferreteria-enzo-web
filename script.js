@@ -2488,7 +2488,7 @@ if (searchInput) {
             const nombre    = (prod.nombre   || '').toLowerCase();
             const marca     = (prod.marca    || '').toLowerCase();
             let categoria   = (prod.categoria || '').toLowerCase();
-            if (categoria === 'sin categoria') categoria = 'otros varios';
+            if (categoria === 'sin-categoria' || categoria === 'sin categoria') categoria = 'otros varios';
             const codigo = (prod.id || '').toLowerCase();
             return nombre.includes(q) || marca.includes(q) || categoria.includes(q) || codigo.includes(q);
         });
