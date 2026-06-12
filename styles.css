@@ -32,15 +32,9 @@
 
 body {
     background-color: var(--grey-bg);
-    line-height: 1.6;
-    color: var(--text-dark);
-    -webkit-font-smoothing: antialiased; /* Texto más nítido */
-}
-body {
-    background-color: #F7FAFC; /* El gris base que ya tenés */
-    /* Creamos una textura de puntitos grises muy suaves */
+    /* Textura de puntitos grises muy suaves */
     background-image: radial-gradient(#CBD5E0 1px, transparent 1px);
-    background-size: 24px 24px; /* Separación entre los puntos */
+    background-size: 24px 24px;
     line-height: 1.6;
     color: var(--text-dark);
     -webkit-font-smoothing: antialiased;
@@ -48,17 +42,6 @@ body {
     width: 100%;
     position: relative;
 }
-/* 1. ELIMINAR EL "TAMBALEO" HORIZONTAL (Pero salvando el Sticky) */
-
-
-/* 1.5 OBLIGAR AL HEADER A SEGUIRTE (STICKY) */
-.main-header {
-    position: -webkit-sticky !important; /* Para iPhones */
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 1500 !important; /* Muy alto para que ninguna tarjeta lo tape */
-}
-
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -121,9 +104,10 @@ img {
 .main-header {
     background-color: var(--card-white);
     padding: 12px 0;
+    position: -webkit-sticky; /* Para iPhones */
     position: sticky;
     top: 0;
-    z-index: 1000;
+    z-index: 1500; /* Alto para que ninguna tarjeta lo tape (top-bar = 1501) */
     box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     border-top: 4px solid var(--primary-blue);
     transition: box-shadow .2s;
@@ -1827,7 +1811,8 @@ img {
 }
 
 /* ─── MOBILE: 1 columna ──────────────────────────────────────────────── */
-@media (max-width: 767px) {
+/* 768px = límite mobile unificado en todo el archivo */
+@media (max-width: 768px) {
     .cart-body { flex-direction: column; }
     .cart-items-col { padding: 16px; flex: none; max-height: 45vh; }
     .cart-summary-col { width: 100%; border-left: none; border-top: 1px solid #E2E8F0; flex: 1; }
@@ -3578,7 +3563,8 @@ body {
 }
 .cart-fab.has-items { display: flex; }
 
-@media (min-width: 768px) {
+/* 769+: desktop — complementa el límite mobile de 768px sin solaparse */
+@media (min-width: 769px) {
     .cart-fab { display: none !important; }
 }
 

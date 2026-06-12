@@ -1,0 +1,105 @@
+═══════════════════════════════════════════════════════════════════════════
+CHECKLIST DE PRUEBAS MANUALES — ENZO DISTRIBUCIONES
+Validar la copia antes de pasar los cambios al proyecto original.
+Tildá cada ítem. Si algo falla: F12 → Console, copiá el error y pasámelo.
+═══════════════════════════════════════════════════════════════════════════
+
+PREPARACIÓN
+[ ] Reglas de Firestore publicadas (REGLAS-FIRESTORE.txt, sección A)
+[ ] Los 3 índices compuestos existen (sección B)
+[ ] Probar en PC y en celular (o F12 → modo responsive)
+
+── 1. HOME (index.html) ────────────────────────────────────────────────────
+[ ] Carga rápido (el fondo del hero ya no pesa 4,6 MB)
+[ ] La tipografía se ve Roboto (letras más redondeadas que Arial)
+[ ] Carruseles "Últimos Ingresos" y "Ofertas" cargan productos y las
+    flechas funcionan
+[ ] Los 6 banners de categorías llevan a catálogos CON productos
+    (Herramientas Eléctricas, Pinturería, Griferías, Bulonería, Hogar,
+    Electricidad)
+[ ] Tarjetas "Logística" y "Efectivo y Transferencia" abren sus modals
+    (el de pagos muestra CBU/alias)
+[ ] Footer: email distribuidoraenzo28@gmail.com, WhatsApp +54 9 3755
+    503213, Instagram abre el perfil real
+[ ] Buzón de Sugerencias: abre al clickear (no aparece solo), envía OK
+
+── 2. CATÁLOGO (productos.html) ────────────────────────────────────────────
+[ ] El modal de feedback NO aparece abierto al cargar la página
+[ ] No se ve la paginación falsa "1 2 3 >" antes de cargar
+[ ] Filtros de categorías del sidebar funcionan (probar 2-3)
+[ ] Buscador predictivo muestra resultados al tipear
+[ ] El "+" de una tarjeta NO supera el stock del producto (probar con
+    uno de stock bajo) — muestra aviso
+[ ] Agregar el mismo producto 2 veces hasta superar stock → aviso
+[ ] Producto con variantes: "VER OPCIONES" abre el modal y agrega bien
+
+── 3. DETALLE (detalle.html) ───────────────────────────────────────────────
+[ ] El modal de feedback NO aparece abierto al cargar
+[ ] Dice "Envío Gratis superando $150.000" y "Garantía Oficial de Fábrica"
+[ ] Producto con variantes: los botones de variante cambian precio/stock/
+    código (probar uno con medidas tipo 1/2")
+[ ] En celular: aparece el botón flotante del carrito (antes no estaba)
+[ ] El carrito se ve en 2 columnas en PC (items izquierda, resumen derecha)
+
+── 4. CHECKOUT COMO VISITANTE (sin login, ventana incógnita) ───────────────
+[ ] Agregar productos → carrito → "ARMAR PRESUPUESTO →"
+[ ] Completar nombre/WhatsApp/negocio + aceptar términos → abre WhatsApp
+    con el mensaje del presupuesto
+[ ] Repetir DESDE CUENTA.HTML (agregar producto ahí y armar presupuesto)
+    — antes el carrito de esa página estaba roto
+
+── 5. CHECKOUT COMO CLIENTE VIP ────────────────────────────────────────────
+[ ] Login con DNI funciona; login con email funciona
+[ ] Los precios se ven (tarjetas, detalle, carrito)
+[ ] Al abrir el carrito, los datos del perfil vienen pre-cargados (badge
+    verde "Datos cargados desde tu perfil")
+[ ] *** CLAVE: pedido con un producto CON VARIANTES desde detalle.html ***
+    → debe confirmarse y abrir WhatsApp (probaba 2 bugs arreglados:
+    checkbox de términos + regla de Firestore)
+[ ] Pedido con producto normal + caja cerrada → confirma OK
+[ ] Tras el pedido: el stock bajó correctamente en el admin
+[ ] Pedido que supere el stock → mensaje claro de "Stock insuficiente
+    para X" (ya no el genérico "error al conectar")
+
+── 6. CUENTA (cuenta.html) ─────────────────────────────────────────────────
+[ ] Solicitar acceso SIN completar email → "¡Solicitud enviada!"
+    (antes fallaba con error de conexión)
+[ ] Solicitar acceso con todos los datos → llega al panel admin
+[ ] "Mis Datos" → editar nombre/teléfono/foto → guarda SIN mostrar
+    "Error al actualizar" (antes siempre aparecía el error fantasma)
+[ ] "Mis Pedidos" lista los pedidos con estado y botón "Repetir"
+[ ] "Repetir" carga los productos al carrito (probar con un producto
+    que tenga apóstrofe o comillas en el nombre si existe)
+[ ] "Favoritos" se ve EN CUADRÍCULA (antes quedaban en lista rota)
+[ ] Quitar un favorito lo saca de la grilla; al quitar el último
+    aparece el mensaje de vacío
+[ ] Recuperar contraseña: envía el email
+
+── 7. ADMIN (admin.html) ───────────────────────────────────────────────────
+[ ] Login admin entra al panel; un cliente normal es expulsado
+[ ] Productos/pedidos/clientes/mensajes cargan
+[ ] Crear/editar un producto → en la tienda se refleja (esperar 1 min
+    de caché o agregar ?nocache a la URL)
+[ ] Cambiar estado de un pedido funciona
+[ ] Imprimir/PDF de un pedido: el membrete dice distribuidoraenzo28@gmail.com
+
+── 8. VARIOS ───────────────────────────────────────────────────────────────
+[ ] legales.html: sin banner BETA, favicon visible
+[ ] Una URL inexistente muestra el 404 con favicon
+[ ] FAQ: dice $150.000 en la pregunta de envíos
+[ ] Navegación con teclado: Tab llega al carrito del header y Enter lo abre
+[ ] En celular (≤768px): menú hamburguesa, filtros y carrito usables
+
+═══════════════════════════════════════════════════════════════════════════
+PENDIENTES CONOCIDOS (decisiones tuyas / trabajo futuro)
+═══════════════════════════════════════════════════════════════════════════
+- Sección "Nuestras Marcas" del home sigue comentada: ¿reactivar o borrar
+  los 30 logos del repo?
+- ~298 !important en styles.css: purga gradual con el sitio a la vista.
+- Contraste de grises claros (#A0AEC0): ajuste fino pendiente.
+- Los precios viajan al navegador de todos los visitantes aunque se
+  oculten (decisión de negocio — ver nota 2 de REGLAS-FIRESTORE.txt).
+- A futuro: imágenes de productos a Storage/CDN en vez de base64 en
+  Firestore (costo y velocidad cuando crezca el catálogo).
+- Si Lucas quiere entrar al panel admin con su cuenta: agregar su email
+  en admin.js (~línea 89) — las reglas ya lo permiten.
