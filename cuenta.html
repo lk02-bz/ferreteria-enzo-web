@@ -684,54 +684,117 @@
          CARRITO
     ══════════════════════════════════════════ -->
     <div class="cart-overlay" id="cart-overlay"></div>
-    <div class="cart-drawer" id="cart-drawer">
+    <div class="cart-drawer" id="cart-drawer" data-step="1">
+        <!-- Header -->
         <div class="cart-header">
-            <h3 id="cart-title-step">Tu Carrito <span id="cart-count-header">(0)</span></h3>
+            <h3 id="cart-title-step">
+                <span class="material-icons" style="font-size:1.2rem;color:var(--primary-blue)">shopping_cart</span>
+                Tu Carrito <span id="cart-count-header">(0)</span>
+            </h3>
             <button class="close-cart-btn" id="close-cart-btn" aria-label="Cerrar carrito">
                 <span class="material-icons">close</span>
             </button>
         </div>
-        <div class="cart-items" id="cart-items-container"></div>
+
+        <!-- Body: 2 columnas -->
+        <div class="cart-body">
+
+            <!-- Columna izquierda: items del carrito -->
+            <div class="cart-items-col">
+                <div id="cart-items-container"></div>
+            </div>
+
+            <!-- Columna derecha: checkout steps + resumen -->
+            <div class="cart-summary-col">
+
+                <div class="cart-items checkout-step" id="checkout-step-1" style="display:none">
+                    <!-- step 1 vacío — los items están en cart-items-col -->
+                </div>
+
+        <div class="cart-items checkout-step" id="checkout-step-2" style="display: none; padding: 25px;">
+            <h4 style="margin-bottom: 20px; color: var(--primary-dark); border-bottom: 2px solid #E2E8F0; padding-bottom: 5px;">Tus Datos Comerciales</h4>
+            <!-- Badge: datos pre-cargados del perfil -->
+            <div id="chk-prefill-badge" style="display:none;align-items:center;gap:8px;background:#E1F5EE;border:1px solid #9AE6B4;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#276749;">
+                <span class="material-icons" style="font-size:15px;color:#38A169;">check_circle</span>
+                <span>Datos cargados desde tu perfil — podés modificarlos si querés.</span>
+            </div>
+            <div class="form-group"><input type="text" id="chk-nombre" placeholder="Nombre o Razón Social" class="modal-input" required></div>
+            <div class="form-group"><input type="tel" id="chk-telefono" placeholder="Teléfono / WhatsApp" class="modal-input" required></div>
+            <div class="form-group"><input type="text" id="chk-direccion" placeholder="Dirección Exacta (Ej: Av. San Martín 123)" class="modal-input" required></div>
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex:2;"><input type="text" id="chk-localidad" placeholder="Localidad / Ciudad" class="modal-input" required></div>
+                <div class="form-group" style="flex:1;"><input type="text" id="chk-cp" placeholder="C.P." class="modal-input" required></div>
+            </div>
+        </div>
+
+        <div class="cart-items checkout-step" id="checkout-step-3" style="display: none; padding: 25px;">
+            <h4 style="margin-bottom: 20px; color: var(--primary-dark); border-bottom: 2px solid #E2E8F0; padding-bottom: 5px;">Logística y Pago</h4>
+
+            <label style="font-weight: bold; font-size: 0.9rem; display:block; margin-bottom: 5px;">Método de Entrega</label>
+            <select id="chk-envio" class="modal-input" style="margin-bottom: 20px; padding: 10px;">
+                <option value="Retira en Sucursal">Retira en Sucursal (Misiones)</option>
+                <option value="Transporte / Vía Cargo">Envío por Transporte / Vía Cargo</option>
+                <option value="Envío a Domicilio">Envío a Domicilio (Local)</option>
+            </select>
+
+            <label style="font-weight: bold; font-size: 0.9rem; display:block; margin-bottom: 5px;">Preferencia de Pago</label>
+            <select id="chk-pago" class="modal-input" style="margin-bottom: 20px; padding: 10px;">
+                <option value="Transferencia">Transferencia Bancaria</option>
+                <option value="Efectivo">Efectivo en Local (10% OFF)</option>
+            </select>
+
+            <label style="font-weight: bold; font-size: 0.9rem; display:block; margin-bottom: 5px;">Indicaciones para el transporte</label>
+            <textarea id="chk-notas" class="modal-input" placeholder="Ej: Es un galpón con portón azul... (Opcional)" rows="3" style="resize: none;"></textarea>
+
+            <div style="margin-top: 15px; display: flex; align-items: flex-start; gap: 10px; background: #F7FAFC; padding: 12px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                <input type="checkbox" id="chk-terminos" style="margin-top: 2px; transform: scale(1.3); cursor: pointer;">
+                <label for="chk-terminos" style="font-size: 0.85rem; color: #4A5568; line-height: 1.4; cursor: pointer;">
+                    He leído y acepto los <a href="legales.html" target="_blank" style="color: var(--primary-blue); text-decoration: underline;">Términos y Condiciones</a> y la Política de Privacidad de Distribuciones Enzo.
+                </label>
+            </div>
+        </div>
+
+        <!-- Paso presupuesto: visible solo para visitantes sin VIP -->
+        <div class="cart-items checkout-step" id="checkout-step-presupuesto" style="display: none; padding: 25px;">
+            <h4 style="margin-bottom: 6px; color: var(--primary-dark); border-bottom: 2px solid #E2E8F0; padding-bottom: 8px;">
+                Tus Datos de Contacto
+            </h4>
+            <p style="font-size: 0.85rem; color: #718096; margin-bottom: 18px;">
+                Enzo recibirá tu lista y te responderá con precios y disponibilidad por WhatsApp.
+            </p>
+            <div class="form-group"><input type="text" id="pres-nombre"   placeholder="Nombre y Apellido *"   class="modal-input"></div>
+            <div class="form-group"><input type="tel"  id="pres-telefono" placeholder="WhatsApp / Teléfono *" class="modal-input"></div>
+            <div class="form-group"><input type="text" id="pres-negocio"  placeholder="Nombre del negocio *"  class="modal-input"></div>
+            <div style="margin-top: 15px; display: flex; align-items: flex-start; gap: 10px; background: #F7FAFC; padding: 12px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                <input type="checkbox" id="pres-terminos" style="margin-top: 2px; transform: scale(1.3); cursor: pointer;">
+                <label for="pres-terminos" style="font-size: 0.85rem; color: #4A5568; line-height: 1.4; cursor: pointer;">
+                    He leído y acepto los <a href="legales.html" target="_blank" style="color: var(--primary-blue); text-decoration: underline;">Términos y Condiciones</a> de Distribuciones Enzo.
+                </label>
+            </div>
+        </div>
+
         <div class="cart-footer">
-            <div class="cart-total">
-                <span>Total:</span>
-                <span id="cart-total-price">$0</span>
+            <div class="cart-total" id="footer-total-box"><span>Total:</span><span id="cart-total-price">$0</span></div>
+            <button class="btn-checkout" id="btn-next-step" style="margin-bottom: 12px;">CONTINUAR AL ENVÍO</button>
+            <button class="btn-outline-cart" id="btn-keep-shopping">
+                <span class="material-icons">add_shopping_cart</span> ¡Quiero sumar más productos!
+            </button>
+            <div style="display: flex; justify-content: space-between; margin-top: 15px; border-top: 1px solid #E2E8F0; padding-top: 12px;">
+                <button class="btn-clear" id="btn-prev-step" style="display: none; text-decoration: none; font-weight: bold; color: var(--text-light);">
+                    <span class="material-icons" style="font-size: 1.1rem; vertical-align: middle;">arrow_back</span> Atrás
+                </button>
+                <button class="btn-clear" id="btn-clear-cart" style="color: #A0AEC0; margin-left: auto;">Vaciar Carrito</button>
             </div>
-            <button class="btn-checkout" id="btn-next-step">CONTINUAR AL ENVÍO</button>
-            <button class="btn-prev" id="btn-prev-step" style="display:none;">← Volver</button>
-            <button class="btn-clear" id="btn-clear-cart">Vaciar Carrito</button>
-        </div>
-        <!-- Pasos del checkout -->
-        <div id="checkout-step-1" style="display:none;"></div>
-        <div id="checkout-step-2" style="display:none;padding:0 16px;">
-            <div class="form-group"><label>Nombre completo *</label><input type="text" id="chk-nombre" class="modal-input" placeholder="Tu nombre"></div>
-            <div class="form-group"><label>Teléfono *</label><input type="text" id="chk-telefono" class="modal-input" placeholder="Tu teléfono"></div>
-            <div class="form-group"><label>Dirección *</label><input type="text" id="chk-direccion" class="modal-input" placeholder="Calle y número"></div>
-            <div class="form-group"><label>Localidad</label><input type="text" id="chk-localidad" class="modal-input" placeholder="Ciudad"></div>
-            <div class="form-group"><label>Código Postal</label><input type="text" id="chk-cp" class="modal-input" placeholder="CP"></div>
-            <div class="form-group"><label>Método de envío</label>
-                <select id="chk-envio" class="modal-input">
-                    <option value="Retira en Sucursal">Retira en Sucursal (Misiones)</option>
-                    <option value="Transporte / Vía Cargo">Envío por Transporte / Vía Cargo</option>
-                    <option value="Envío a Domicilio">Envío a Domicilio (Local)</option>
-                </select>
-            </div>
-            <div class="form-group"><label>Método de pago</label>
-                <select id="chk-pago" class="modal-input">
-                    <option value="Transferencia">Transferencia Bancaria</option>
-                    <option value="Efectivo">Efectivo en Local (10% OFF)</option>
-                </select>
-            </div>
-            <div class="form-group"><label>Notas adicionales</label><textarea id="chk-notas" class="modal-input" rows="2" placeholder="Aclaraciones..."></textarea></div>
-        </div>
-        <div id="checkout-step-3" style="display:none;padding:0 16px;">
-            <p style="font-size:0.9rem;color:#4A5568;margin-bottom:12px;">Al confirmar se generará el pedido y te llevaremos a WhatsApp para coordinar con Enzo.</p>
-            <label style="display:flex;gap:8px;align-items:flex-start;font-size:0.85rem;color:#4A5568;cursor:pointer;">
-                <input type="checkbox" id="chk-terminos" style="margin-top:3px;">
-                Acepto los <a href="legales.html" target="_blank" style="color:var(--primary-blue);">Términos y Condiciones</a>
-            </label>
-        </div>
-    </div>
+        </div><!-- fin cart-footer -->
+            </div><!-- fin cart-summary-col -->
+        </div><!-- fin cart-body -->
+    </div><!-- fin cart-drawer -->
+
+    <!-- FAB: carrito flotante en mobile -->
+    <button class="cart-fab" id="cart-fab" onclick="renderizarCarrito(); abrirCarrito();" title="Ver carrito" aria-label="Ver carrito">
+        <span class="material-icons">shopping_cart</span>
+        <span class="fab-badge" id="fab-badge" style="display:none">0</span>
+    </button>
 
     <div id="toast" class="toast-notification">
         <span class="material-icons">check_circle</span>

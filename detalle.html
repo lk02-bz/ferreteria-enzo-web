@@ -255,18 +255,37 @@
     </footer>
 
     <div class="cart-overlay" id="cart-overlay"></div>
-<div class="cart-drawer" id="cart-drawer">
+<div class="cart-drawer" id="cart-drawer" data-step="1">
         <div class="cart-header">
-            <h3 id="cart-title-step">Tu Carrito <span id="cart-count-header">(0)</span></h3>
+            <h3 id="cart-title-step">
+                <span class="material-icons" style="font-size:1.2rem;color:var(--primary-blue)">shopping_cart</span>
+                Tu Carrito <span id="cart-count-header">(0)</span>
+            </h3>
             <button class="close-cart-btn" id="close-cart-btn" aria-label="Cerrar carrito"><span class="material-icons">close</span></button>
         </div>
-        
-        <div class="cart-items checkout-step" id="checkout-step-1">
-            <div id="cart-items-container"></div>
-        </div>
+
+        <!-- Body: 2 columnas -->
+        <div class="cart-body">
+
+            <!-- Columna izquierda: items del carrito -->
+            <div class="cart-items-col">
+                <div id="cart-items-container"></div>
+            </div>
+
+            <!-- Columna derecha: checkout steps + resumen -->
+            <div class="cart-summary-col">
+
+                <div class="cart-items checkout-step" id="checkout-step-1" style="display:none">
+                    <!-- step 1 vacío — los items están en cart-items-col -->
+                </div>
 
         <div class="cart-items checkout-step" id="checkout-step-2" style="display: none; padding: 25px;">
             <h4 style="margin-bottom: 20px; color: var(--primary-dark); border-bottom: 2px solid #E2E8F0; padding-bottom: 5px;">Tus Datos Comerciales</h4>
+            <!-- Badge: datos pre-cargados del perfil -->
+            <div id="chk-prefill-badge" style="display:none;align-items:center;gap:8px;background:#E1F5EE;border:1px solid #9AE6B4;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#276749;">
+                <span class="material-icons" style="font-size:15px;color:#38A169;">check_circle</span>
+                <span>Datos cargados desde tu perfil — podés modificarlos si querés.</span>
+            </div>
             <div class="form-group"><input type="text" id="chk-nombre" placeholder="Nombre o Razón Social" class="modal-input" required></div>
             <div class="form-group"><input type="tel" id="chk-telefono" placeholder="Teléfono / WhatsApp" class="modal-input" required></div>
             <div class="form-group"><input type="text" id="chk-direccion" placeholder="Dirección Exacta (Ej: Av. San Martín 123)" class="modal-input" required></div>
@@ -338,8 +357,10 @@
                 </button>
                 <button class="btn-clear" id="btn-clear-cart" style="color: #A0AEC0; margin-left: auto;">Vaciar Carrito</button>
             </div>
-        </div>
-    </div>
+        </div><!-- fin cart-footer -->
+            </div><!-- fin cart-summary-col -->
+        </div><!-- fin cart-body -->
+    </div><!-- fin cart-drawer -->
 
     <div class="modal-overlay" id="modal-overlay"></div>
 
@@ -365,6 +386,11 @@
             </div>
         </div>
 
+    <!-- FAB: carrito flotante en mobile -->
+    <button class="cart-fab" id="cart-fab" onclick="renderizarCarrito(); abrirCarrito();" title="Ver carrito" aria-label="Ver carrito">
+        <span class="material-icons">shopping_cart</span>
+        <span class="fab-badge" id="fab-badge" style="display:none">0</span>
+    </button>
     <div id="toast" class="toast-notification">
         <span class="material-icons">check_circle</span>
         <span id="toast-message">Producto agregado</span>
