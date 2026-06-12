@@ -121,7 +121,7 @@
     <header class="main-header">
         <div class="container header-content">
             
-            <button class="menu-toggle" id="mobile-menu-btn">
+            <button class="menu-toggle" id="mobile-menu-btn" aria-label="Abrir menú">
                 <span class="material-icons">menu</span>
             </button>
 
@@ -141,7 +141,7 @@
             <div class="search-container">
                 <form class="search-bar" id="search-form">
                     <input type="text" id="search-input" placeholder="Buscar producto, marca o categoría..." autocomplete="off">
-                    <button type="submit" class="search-btn">
+                    <button type="submit" class="search-btn" aria-label="Buscar">
                         <span class="material-icons">search</span>
                     </button>
                 </form>
@@ -156,7 +156,7 @@
                     <span class="material-icons">person</span>
                 </a>
 
-                <div class="cart-icon">
+                <div class="cart-icon" role="button" tabindex="0" aria-label="Abrir carrito">
                     <span class="material-icons">shopping_cart</span>
                     <span class="badge">0</span>
                 </div>
@@ -166,7 +166,7 @@
 
 <header class="hero-banner">
         <div class="hero-content">
-            <h1 style="font-size: 3rem;">Distribuidor Mayorista Ferretero en Misiones</h1>
+            <h1 style="font-size: clamp(1.9rem, 5.5vw, 3rem);">Distribuidor Mayorista Ferretero en Misiones</h1>
             <p>Stock permanente, marcas líderes y logística rápida. Abastecemos tu negocio o constructora.</p>
             <a href="productos.html" class="btn-hero">Ver Catálogo</a>
         </div>
@@ -244,9 +244,9 @@
                 <div class="divider-light"></div>
             </div>
             <div class="carousel-b2b-wrapper">
-                <button class="carousel-arrow left-arrow" id="btn-nuevos-prev"><span class="material-icons">chevron_left</span></button>
+                <button class="carousel-arrow left-arrow" id="btn-nuevos-prev" aria-label="Anterior"><span class="material-icons">chevron_left</span></button>
                 <div class="product-carousel" id="contenedor-nuevos"></div>
-                <button class="carousel-arrow right-arrow" id="btn-nuevos-next"><span class="material-icons">chevron_right</span></button>
+                <button class="carousel-arrow right-arrow" id="btn-nuevos-next" aria-label="Siguiente"><span class="material-icons">chevron_right</span></button>
             </div>
         </div>
     </section>
@@ -259,9 +259,9 @@
             </div>
 
             <div class="carousel-b2b-wrapper">
-                <button class="carousel-arrow left-arrow" id="btn-ofertas-prev"><span class="material-icons">chevron_left</span></button>
+                <button class="carousel-arrow left-arrow" id="btn-ofertas-prev" aria-label="Anterior"><span class="material-icons">chevron_left</span></button>
                 <div class="product-carousel" id="contenedor-ofertas"></div>
-                <button class="carousel-arrow right-arrow" id="btn-ofertas-next"><span class="material-icons">chevron_right</span></button>
+                <button class="carousel-arrow right-arrow" id="btn-ofertas-next" aria-label="Siguiente"><span class="material-icons">chevron_right</span></button>
             </div>
             
             <div class="view-more-container">
@@ -391,7 +391,7 @@
 
         <div class="carousel-b2b-wrapper">
             
-            <button class="carousel-arrow left-arrow" id="btn-cat-prev">
+            <button class="carousel-arrow left-arrow" id="btn-cat-prev" aria-label="Anterior">
                 <span class="material-icons">chevron_left</span>
             </button>
 
@@ -448,7 +448,7 @@
                 </div>
             
 
-            <button class="carousel-arrow right-arrow" id="btn-cat-next">
+            <button class="carousel-arrow right-arrow" id="btn-cat-next" aria-label="Siguiente">
                 <span class="material-icons">chevron_right</span>
             </button>
       
@@ -607,7 +607,7 @@
                 <span class="material-icons" style="font-size:1.2rem;color:var(--primary-blue)">shopping_cart</span>
                 Tu Carrito <span id="cart-count-header">(0)</span>
             </h3>
-            <button class="close-cart-btn" id="close-cart-btn" title="Volver al catálogo">
+            <button class="close-cart-btn" id="close-cart-btn" title="Volver al catálogo" aria-label="Cerrar carrito">
                 <span class="material-icons">close</span>
             </button>
         </div>
@@ -712,7 +712,7 @@
 
 
         <!-- FAB: carrito flotante en mobile -->
-    <button class="cart-fab" id="cart-fab" onclick="renderizarCarrito(); abrirCarrito();" title="Ver carrito">
+    <button class="cart-fab" id="cart-fab" onclick="renderizarCarrito(); abrirCarrito();" title="Ver carrito" aria-label="Ver carrito">
         <span class="material-icons">shopping_cart</span>
         <span class="fab-badge" id="fab-badge" style="display:none">0</span>
     </button>

@@ -728,6 +728,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // G. Formulario de solicitud de acceso (cuenta.html)
     configurarFormularioSolicitud();
 
+    // H. A11y: inputs sin <label> usan su placeholder como nombre accesible
+    document.querySelectorAll('input[placeholder]:not([aria-label]), textarea[placeholder]:not([aria-label])')
+        .forEach(el => el.setAttribute('aria-label', el.placeholder));
+
     console.log("Sistema cargado correctamente.");
 });
 
@@ -2381,6 +2385,10 @@ function renderizarCarrito() {
 function configurarEventosCarrito() {
     document.querySelectorAll('.cart-icon').forEach(icon => {
         icon.addEventListener('click', () => { renderizarCarrito(); abrirCarrito(); });
+        // A11y: el ícono es un div con role="button" — abrir también con teclado
+        icon.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); renderizarCarrito(); abrirCarrito(); }
+        });
     });
     const closeBtn = document.getElementById('close-cart-btn');
     const clearBtn = document.getElementById('btn-clear-cart');

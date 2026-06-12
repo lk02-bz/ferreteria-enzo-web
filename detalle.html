@@ -52,7 +52,7 @@
     
     <header class="main-header">
         <div class="container header-content">
-            <button class="menu-toggle" id="mobile-menu-btn"><span class="material-icons">menu</span></button>
+            <button class="menu-toggle" id="mobile-menu-btn" aria-label="Abrir menú"><span class="material-icons">menu</span></button>
            <a href="index.html" class="logo">
             <img src="./EnzoDistribuidora.png" alt="Distribuciones Enzo">
             </a>
@@ -68,7 +68,7 @@
             <div class="search-container">
                 <form class="search-bar" id="search-form">
                     <input type="text" id="search-input" placeholder="Buscar producto..." autocomplete="off">
-                    <button type="submit" class="search-btn">
+                    <button type="submit" class="search-btn" aria-label="Buscar">
                         <span class="material-icons">search</span>
                     </button>
                 </form>
@@ -82,7 +82,7 @@
                     <span class="material-icons">person</span>
                 </a>
                 -->
-                <div class="cart-icon">
+                <div class="cart-icon" role="button" tabindex="0" aria-label="Abrir carrito">
                     <span class="material-icons">shopping_cart</span>
                     <span class="badge">0</span>
                 </div>
@@ -174,9 +174,9 @@
             </h3>
             
             <div class="carousel-b2b-wrapper">
-                <button class="carousel-arrow left-arrow" id="btn-similares-prev"><span class="material-icons">chevron_left</span></button>
+                <button class="carousel-arrow left-arrow" id="btn-similares-prev" aria-label="Anterior"><span class="material-icons">chevron_left</span></button>
                 <div class="product-carousel" id="contenedor-similares" style="padding: 10px 5px 30px 5px;"></div>
-                <button class="carousel-arrow right-arrow" id="btn-similares-next"><span class="material-icons">chevron_right</span></button>
+                <button class="carousel-arrow right-arrow" id="btn-similares-next" aria-label="Siguiente"><span class="material-icons">chevron_right</span></button>
             </div>
         </div>
         </div>
@@ -258,7 +258,7 @@
 <div class="cart-drawer" id="cart-drawer">
         <div class="cart-header">
             <h3 id="cart-title-step">Tu Carrito <span id="cart-count-header">(0)</span></h3>
-            <button class="close-cart-btn" id="close-cart-btn"><span class="material-icons">close</span></button>
+            <button class="close-cart-btn" id="close-cart-btn" aria-label="Cerrar carrito"><span class="material-icons">close</span></button>
         </div>
         
         <div class="cart-items checkout-step" id="checkout-step-1">
