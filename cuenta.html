@@ -1045,7 +1045,7 @@
                                 </div>
                                 <span class="estado-badge ${clase}">${(d.estado || 'pendiente').toUpperCase()}</span>
                             </div>
-                            <p class="pedido-resumen">${resumen}</p>
+                            <p class="pedido-resumen">${escHtml(resumen)}</p>
                             <div class="pedido-footer">
                                 <span class="pedido-total">$${parseInt(d.total || 0).toLocaleString('es-AR')}</span>
                                 <button class="btn-repetir" onclick="repetirPedido('${itemsEnc}')">
@@ -1095,8 +1095,8 @@
                         <div style="position:relative;">
                             <a href="detalle.html?id=${doc.id}" style="text-decoration:none;color:inherit;display:block;">
                                 <div style="background:white;border:1px solid #EDF2F7;border-radius:12px;overflow:hidden;text-align:center;padding-bottom:10px;transition:box-shadow .15s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='none'">
-                                    <img src="${f.imagen}" alt="${f.nombre}" style="width:100%;height:110px;object-fit:contain;padding:10px;" loading="lazy">
-                                    <p style="font-size:0.82rem;color:#2D3748;padding:0 10px;font-weight:700;line-height:1.3;">${f.nombre}</p>
+                                    <img src="${f.imagen}" alt="${escHtml(f.nombre)}" style="width:100%;height:110px;object-fit:contain;padding:10px;" loading="lazy">
+                                    <p style="font-size:0.82rem;color:#2D3748;padding:0 10px;font-weight:700;line-height:1.3;">${escHtml(f.nombre)}</p>
                                     <p style="font-size:0.75rem;color:#3182CE;margin-top:4px;font-weight:600;">Ver producto →</p>
                                 </div>
                             </a>

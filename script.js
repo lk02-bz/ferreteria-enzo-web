@@ -28,6 +28,13 @@ const storage = firebase.storage();
 let inventario    = [];
 let usuarioEsVIP  = false; // false por defecto — se activa solo si admin aprueba
 
+/* Escapa texto antes de inyectarlo con innerHTML (previene XSS) */
+function escHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 /* ── Constante centralizada: monto mínimo para envío gratis ──────────────
    Cambiar SOLO AQUÍ — se aplica automáticamente en la barra del carrito
    y en cualquier otro lugar que la referencie.
@@ -1796,15 +1803,15 @@ function renderizarGrid(lista, contenedor) {
         card.innerHTML = `
             <a href="${link}" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;flex-grow:1;">
                 <div class="card-image">
-                    <img src="${prod.imagen}" alt="${prod.nombre}" loading="lazy" width="300" height="300">
+                    <img src="${prod.imagen}" alt="${escHtml(prod.nombre)}" loading="lazy" width="300" height="300">
                     ${badgeHtml}
                     ${varBadge}
                     <button class="card-share-btn" data-share-id="${prod.id}" onclick="event.preventDefault();event.stopPropagation();mostrarSharePopover(this)" title="Compartir producto"><span class="material-icons">share</span></button>
                     <button class="card-fav-btn ${window._misFavs && window._misFavs.has(prod.id) ? 'is-fav' : ''}" data-fav-id="${prod.id}" onclick="event.preventDefault();event.stopPropagation();toggleFavorito('${prod.id}',this)" title="Guardar en favoritos"><span class="material-icons">${window._misFavs && window._misFavs.has(prod.id) ? 'favorite' : 'favorite_border'}</span></button>
                 </div>
                 <div class="card-info" style="display:flex;flex-direction:column;flex-grow:1;">
-                    <span class="brand">${prod.marca}</span>
-                    <h3 style="margin-bottom:5px;">${prod.nombre}</h3>
+                    <span class="brand">${escHtml(prod.marca)}</span>
+                    <h3 style="margin-bottom:5px;">${escHtml(prod.nombre)}</h3>
                     <div>
                         <span class="product-sku" style="display:inline-flex;align-items:center;background-color:#EDF2F7;color:#4A5568;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-family:monospace;font-weight:bold;border:1px solid #E2E8F0;margin-bottom:10px;">
                             <span class="material-icons" style="font-size:0.85rem;margin-right:3px;">qr_code_2</span> CÓD: ${codigoProducto}
@@ -2315,9 +2322,9 @@ function renderizarCarrito() {
 
             contenedor.innerHTML += `
                 <div class="cart-item">
-                    <img src="${item.imagen}" alt="${item.nombre}">
+                    <img src="${item.imagen}" alt="${escHtml(item.nombre)}">
                     <div class="cart-item-info">
-                        <div class="cart-item-title" style="font-size:0.9rem;margin-bottom:2px;">${item.nombre}</div>
+                        <div class="cart-item-title" style="font-size:0.9rem;margin-bottom:2px;">${escHtml(item.nombre)}</div>
                         ${precioUnitHtml}
                         <div class="cart-item-controls">
                             <div class="cart-qty-box">
@@ -2498,8 +2505,8 @@ function mostrarResultadosBusqueda(lista) {
             item.classList.add('search-item');
             item.href = `detalle.html?id=${prod.id}`;
             item.innerHTML = `
-                <div class="search-img-box"><img src="${prod.imagen}" alt="${prod.nombre}"></div>
-                <div class="search-info"><h4>${prod.nombre}</h4><span class="search-brand">${prod.marca}</span></div>
+                <div class="search-img-box"><img src="${prod.imagen}" alt="${escHtml(prod.nombre)}"></div>
+                <div class="search-info"><h4>${escHtml(prod.nombre)}</h4><span class="search-brand">${escHtml(prod.marca)}</span></div>
                 <div class="search-action">Ver <span class="material-icons" style="font-size:1rem;">chevron_right</span></div>`;
             searchResults.appendChild(item);
         });
