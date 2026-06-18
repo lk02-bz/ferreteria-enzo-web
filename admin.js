@@ -583,10 +583,12 @@ form.addEventListener('submit', async (e) => {
 
         if (id) {
             await db.collection("productos").doc(id).update(producto);
-            mostrarNotificacionAdmin("Producto actualizado ✓");
+            await actualizarVersionCatalogo();
+          mostrarNotificacionAdmin("Producto actualizado ✓");
         } else {
-            const newId = Date.now().toString(); 
+            const newId = db.collection('productos').doc().id;
             await db.collection("productos").doc(newId).set({id: newId, ...producto});
+            await actualizarVersionCatalogo();
             mostrarNotificacionAdmin("Producto creado ✓");
         }
 
@@ -692,6 +694,7 @@ window.eliminarProducto = async function(id, nombre) {
     });
     if (ok) {
         await db.collection("productos").doc(id).delete();
+        await actualizarVersionCatalogo();
         mostrarNotificacionAdmin('Producto eliminado ✓');
     }
 }
@@ -786,12 +789,21 @@ function cargarPedidos() {
                 const d = new Date(pedido.fecha.seconds * 1000);
                 fechaTexto = `${d.toLocaleDateString('es-AR')} ${d.toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})}`;
             }
-
+            // Alerta visual: pedidos pendientes con más de 24h → stock retenido
+            let alertaViejo = '';
+            if (pedido.estado === 'pendiente' && pedido.fecha && pedido.fecha.seconds) {
+                const horasTranscurridas = (Date.now() - pedido.fecha.seconds * 1000) / 3600000;
+                if (horasTranscurridas > 48) {
+                    alertaViejo = '<span style="background:#FFF5F5;color:#C53030;font-size:0.7rem;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:bold;" title="Este pedido lleva más de 48hs pendiente, el stock sigue retenido">⚠ +48hs</span>';
+                } else if (horasTranscurridas > 24) {
+                    alertaViejo = '<span style="background:#FFFAF0;color:#C05621;font-size:0.7rem;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:bold;" title="Este pedido lleva más de 24hs pendiente">⏰ +24hs</span>';
+                }
+            }
             const claseEstado = pedido.estado === 'completado' ? 'completado' : (pedido.estado === 'cancelado' ? 'cancelado' : 'pendiente');
 
             htmlFilas += `
                 <tr>
-                    <td>${fechaTexto}</td>
+                    <td>${fechaTexto}${alertaViejo}</td>
                     <td style="font-weight:bold;">#${pedido.id.slice(0,6).toUpperCase()}</td>
                     <td>${pedido.cliente || pedido.nombreUsuario || "Invitado"}</td>
                     <td style="color:var(--primary-blue); font-weight:bold;">$${pedido.total ? parseInt(pedido.total).toLocaleString('es-AR') : '0'}</td>
@@ -967,12 +979,11 @@ function actualizarBadge(cantidad) {
 }
 
 window.cambiarEstadoPedido = async function(id, selectElement) {
-    const nuevoEstado = selectElement.value;
+    const nuevoEstado    = selectElement.value;
     const estadoAnterior = selectElement.getAttribute('data-estado-anterior');
-    
     if (nuevoEstado === estadoAnterior) return;
 
-    // BARRERA 1: PREGUNTAR AL CANCELAR
+    // BARRERA 1: confirmar cancelación
     if (nuevoEstado === 'cancelado') {
         const ok = await confirmarAccion({
             icono: '🚫', titulo: 'Cancelar pedido',
@@ -982,7 +993,7 @@ window.cambiarEstadoPedido = async function(id, selectElement) {
         if (!ok) { selectElement.value = estadoAnterior; return; }
     }
 
-    // BARRERA 2: PREGUNTAR AL DES-CANCELAR (Reactivar)
+    // BARRERA 2: confirmar reactivación
     if (estadoAnterior === 'cancelado' && (nuevoEstado === 'pendiente' || nuevoEstado === 'completado')) {
         const ok = await confirmarAccion({
             icono: '♻️', titulo: 'Reactivar pedido cancelado',
@@ -992,44 +1003,64 @@ window.cambiarEstadoPedido = async function(id, selectElement) {
         if (!ok) { selectElement.value = estadoAnterior; return; }
     }
 
+    // signo del ajuste: +1 devuelve stock, -1 lo vuelve a descontar, 0 = sin cambios
+    let signo = 0;
+    if (nuevoEstado === 'cancelado')          signo = 1;
+    else if (estadoAnterior === 'cancelado')  signo = -1;
+
     try {
         selectElement.className = `status-select ${nuevoEstado}`;
-        
-        const batch = db.batch();
+
         const refPedido = db.collection("pedidos").doc(id);
-        batch.update(refPedido, { estado: nuevoEstado });
-
-        // LÓGICA MAGISTRAL DE STOCK (Devolver o Quitar)
         const docPedido = await refPedido.get();
-        const dataPedido = docPedido.data();
-        const items = dataPedido.items || [];
+        const items     = (docPedido.data() || {}).items || [];
 
-        const productosProcesados = {}; 
+        if (signo !== 0) {
+            // Separar ítems normales/cajas de variantes
+            const itemsVar    = items.filter(i => String(i.id).includes('_VAR_'));
+            const itemsNormal = items.filter(i => !String(i.id).includes('_VAR_'));
 
-        // Sumamos cajas y unidades sueltas
-        items.forEach(item => {
-            const idReal = String(item.id).replace('_CAJA', '');
-            const mult = String(item.id).includes('_CAJA') ? (parseInt(item.unidadesPorCaja) || 1) : 1;
-            const totalUnidades = item.cantidad * mult;
+            // 1) Normales y cajas → batch con increment
+            if (itemsNormal.length) {
+                const acumulado = {};
+                itemsNormal.forEach(item => {
+                    const idReal = String(item.id).replace('_CAJA', '');
+                    const mult   = String(item.id).includes('_CAJA') ? (parseInt(item.unidadesPorCaja) || 1) : 1;
+                    acumulado[idReal] = (acumulado[idReal] || 0) + (item.cantidad * mult);
+                });
+                const batch = db.batch();
+                for (const idReal in acumulado) {
+                    batch.update(db.collection("productos").doc(idReal), {
+                        stock: firebase.firestore.FieldValue.increment(signo * acumulado[idReal])
+                    });
+                }
+                await batch.commit();
+            }
 
-            if (!productosProcesados[idReal]) productosProcesados[idReal] = 0;
-            productosProcesados[idReal] += totalUnidades;
-        });
-
-        // Ejecutamos la matemática contra Firebase
-        for (const idReal in productosProcesados) {
-            const refProducto = db.collection("productos").doc(idReal);
-            
-            if (nuevoEstado === 'cancelado') {
-                // DEVUELVE AL STOCK (+)
-                batch.update(refProducto, { stock: firebase.firestore.FieldValue.increment(productosProcesados[idReal]) });
-            } else if (estadoAnterior === 'cancelado') {
-                // QUITA DEL STOCK OTRA VEZ (-)
-                batch.update(refProducto, { stock: firebase.firestore.FieldValue.increment(-productosProcesados[idReal]) });
+            // 2) Variantes → transacción por producto padre (ajusta el array Y el stock total)
+            for (const item of itemsVar) {
+                const padreId = String(item.id).split('_VAR_')[0];
+                const varCode = String(item.id).split('_VAR_').slice(1).join('_VAR_');
+                await db.runTransaction(async (t) => {
+                    const ref = db.collection('productos').doc(padreId);
+                    const doc = await t.get(ref);
+                    if (!doc.exists) return;
+                    const variantes = [...(doc.data().variantes || [])];
+                    const idx = variantes.findIndex(v => (v.codigo || v.id) === varCode);
+                    if (idx === -1) return;
+                    const nuevoStockVar = Math.max(0, (variantes[idx].stock || 0) + signo * item.cantidad);
+                    variantes[idx] = { ...variantes[idx], stock: nuevoStockVar };
+                    t.update(ref, {
+                        variantes,
+                        stock: firebase.firestore.FieldValue.increment(signo * item.cantidad)
+                    });
+                });
             }
         }
 
-        await batch.commit(); // Disparo simultáneo y seguro
+        // 3) Recién al final, con el stock ya ajustado, guardamos el estado
+        await refPedido.update({ estado: nuevoEstado });
+        await actualizarVersionCatalogo();
         selectElement.setAttribute('data-estado-anterior', nuevoEstado);
 
     } catch (error) {
@@ -1037,7 +1068,7 @@ window.cambiarEstadoPedido = async function(id, selectElement) {
         alert("Fallo de conexión. El estado y el stock no se modificaron.");
         selectElement.value = estadoAnterior;
     }
-}
+};
 
 window.borrarPedido = async function(id) {
     const ok = await confirmarAccion({
@@ -1365,12 +1396,74 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
 
     // 🔥 DICCIONARIO OFICIAL DE CATEGORÍAS (Escudo anti-errores de tipeo)
     const categoriasOficiales = [
-        "electricas", "manuales", "inalambricas", "jardineria", "medicion",
-        "interior/latex", "exterior/imper", "esmaltes sinteticos", "rodillos",
-        "caños y tubos", "griferia", "bombas de agua", "accesorios",
-        "cables", "iluminacion", "tomas e interruptores", "protecciones", "cintas",
-        "tornillos", "tuercas y arandelas", "tarugos y fijaciones", "clavos",
-        "utencilios de cocina", "organizadores y almacenaje", "productos de limpieza", "decoracion de hogar"
+       // GRIFERÍAS
+        "grif-bano",
+        "grif-cocina",
+        "grif-jardin",
+        "grif-repuestos",
+        "grif-accesorios",
+
+        // HERRAMIENTAS
+        "herr-electricas",
+        "herr-manuales",
+        "herr-inalambricas",
+        "herr-accesorios",
+        "herr-cajas-organizadoras",
+        "herr-tanzas-albanil",
+
+        // ILUMINACIÓN
+        "ilum-led",
+        "ilum-especiales",
+        "ilum-plafones",
+        "ilum-reflectores",
+        "ilum-tubos-listones",
+        "ilum-apliques",
+        "ilum-colgantes",
+        "ilum-exterior",
+
+        // PINTURERÍA
+        "pint-interior-exterior",
+        "pint-pinceles-rodillos",
+        "pint-lijas",
+        "pint-disolventes",
+        "pint-impermeabilizantes",
+        "pint-aerosoles",
+
+        // ELECTRICIDAD
+        "elec-cables",
+        "elec-protecciones",
+        "elec-termicas-disyuntores",
+        "elec-tomacorrientes-interruptores",
+        "elec-fichas-adaptadores",
+        "elec-tableros",
+        "elec-cintas-aislantes",
+
+        // BULONERÍA
+        "bul-tornillos",
+        "bul-tuercas-arandelas",
+        "bul-bulones",
+        "bul-tarugos-fijaciones",
+        "bul-clavos",
+        "bul-remaches",
+
+        // SEGURIDAD
+        "seg-candados-cerraduras",
+        "seg-camaras",
+        "seg-alarmas",
+        "seg-guantes",
+        "seg-epp",
+        "seg-matafuegos",
+
+        // HOGAR
+        "hog-electrodomesticos",
+        "hog-muebles",
+        "hog-camaras",
+        "hog-organizadores",
+        "hog-productos-limpieza",
+        "hog-tanzas-desmalezadora",
+
+        //sin categoria
+        "sin-categoria"
     ];
 
     // 1. Despertamos la barra de progreso
@@ -1403,41 +1496,74 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                     }
                 });
 
+                // Modo seleccionado por el admin: "nuevo" (INSERT-ONLY) | "actualizar" (UPSERT)
+                const modoImport = document.querySelector('input[name="csv-modo"]:checked')?.value || 'nuevo';
+
                 let batch = db.batch();
-                let count = 0;
-                let creados = 0;
+                let count    = 0;
+                let loteNum  = 0;
+                let creados  = 0;
                 let actualizados = 0;
+                let omitidos = 0;   // ya existían → saltados en modo "nuevo"
                 let ignorados = 0;
-                let advertenciasCat = 0; // ⚠️ NUEVO: Contador de errores de tipeo
+                let advertenciasCat = 0;
 
-/* ==========================================================================
-   INSTRUCCIÓN DE INSTALACIÓN — admin.js
-   ==========================================================================
-   
-   BUSCA esta línea en admin.js (aprox. línea 1359):
-   
-       // 5. EVALUACIÓN FILA POR FILA (BLINDADA)
-       for (let fila of data) {
-   
-   Seleccioná TODO el bloque desde esa línea hasta (e incluyendo):
-   
-       if (count > 0) {
-           await batch.commit();
-       }
-   
-   Y REEMPLAZÁ todo ese bloque con el código de abajo.
-   
-   ========================================================================== */
-
+                const commitBatch = async (b) => {
+                    loteNum++;
+                    progressText.innerHTML = `⏳ Guardando lote ${loteNum}... <span style="color:#718096;font-size:0.82rem;">(${creados + actualizados} guardados hasta ahora)</span>`;
+                    await b.commit();
+                };
 
                 // ── Helpers internos ────────────────────────────────────────────────────────
+                const aliasesCategorias = {
+                    "electricas": "herr-electricas",
+                    "manuales": "herr-manuales",
+                    "inalambricas": "herr-inalambricas",
+                    "cables": "elec-cables",
+                    "cintas": "elec-cintas-aislantes",
+                    "productos de limpieza": "hog-productos-limpieza",
+                    "tomas e interruptores": "elec-tomacorrientes-interruptores"
+                };
+
                 const normCat = (cat) => {
-                    const c = (cat || '').toString().trim().toLowerCase();
-                    if (!categoriasOficiales.includes(c)) { advertenciasCat++; return 'sin categoria'; }
+
+                    let c = (cat || '')
+                        .toString()
+                        .trim()
+                        .toLowerCase()
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "");
+
+                    // Compatibilidad con categorías viejas
+                    if (aliasesCategorias[c]) {
+                        c = aliasesCategorias[c];
+                    }
+
+                    // Validación final
+                    if (!categoriasOficiales.includes(c)) {
+                        advertenciasCat++;
+                        return 'sin-categoria';
+                    }
+
                     return c;
                 };
                 const limpiarPrecio = (v) => {
-                    const s = (v || '0').toString().replace('$','').replace(/\./g,'').replace(',','.').trim();
+                    // Soporta los 3 formatos del xlsx: "1180" | "1234.94" | "$ 1,380.00"
+                    let s = (v || '0').toString().replace(/[$\s\u00a0]/g, '').trim();
+                    if (!s || s === 'nan') return 0;
+                    const tieneComa  = s.includes(',');
+                    const tienePunto = s.includes('.');
+                    if (tieneComa && tienePunto) {
+                        // "$ 1,380.00" → el punto está después de la coma → punto=decimal, coma=miles
+                        if (s.lastIndexOf('.') > s.lastIndexOf(',')) s = s.replace(/,/g, '');
+                        else s = s.replace(/\./g, '').replace(',', '.');
+                    } else if (tieneComa) {
+                        const after = s.split(',').pop();
+                        s = after.length <= 2 ? s.replace(',', '.') : s.replace(/,/g, '');
+                    } else if (tienePunto) {
+                        const after = s.split('.').pop();
+                        if (after.length > 2) s = s.replace(/\./g, '');
+                    }
                     return parseFloat(s) || 0;
                 };
                 const ordenarVars = arr => [...arr].sort((a, b) => {
@@ -1500,18 +1626,29 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                     };
                     if (!productoLimpio.imagen) delete productoLimpio.imagen;
 
-                    if (mapaProductos[codLimpio]) {
-                        batch.update(db.collection('productos').doc(mapaProductos[codLimpio]), productoLimpio);
-                        actualizados++;
-                    } else {
-                        const newId = Date.now().toString() + Math.floor(Math.random() * 1000);
+                    if (modoImport === 'nuevo') {
+                        // ── INSERT-ONLY: omitir si ya existe ──────────────────
+                        if (mapaProductos[codLimpio]) { omitidos++; continue; }
+                        const newId = db.collection('productos').doc().id;
                         productoLimpio.id = newId;
                         if (!productoLimpio.imagen) productoLimpio.imagen = 'https://placehold.co/300x300/EEE/3182CE?text=Sin+Imagen';
                         batch.set(db.collection('productos').doc(newId), productoLimpio);
                         creados++;
+                    } else {
+                        // ── UPSERT: actualizar si existe, crear si no ──────────
+                        if (mapaProductos[codLimpio]) {
+                            batch.update(db.collection('productos').doc(mapaProductos[codLimpio]), productoLimpio);
+                            actualizados++;
+                        } else {
+                            const newId = db.collection('productos').doc().id;
+                            productoLimpio.id = newId;
+                            if (!productoLimpio.imagen) productoLimpio.imagen = 'https://placehold.co/300x300/EEE/3182CE?text=Sin+Imagen';
+                            batch.set(db.collection('productos').doc(newId), productoLimpio);
+                            creados++;
+                        }
                     }
                     count++;
-                    if (count >= 490) { await batch.commit(); batch = db.batch(); count = 0; }
+                    if (count >= 400) { await commitBatch(batch); batch = db.batch(); count = 0; }
                 }
 
                 // ── Paso C: Procesar GRUPOS → 1 documento padre con variantes[] embebidas ───
@@ -1532,7 +1669,10 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                     const labelDim2   = (p1['VAR_LABEL2'] || '').toString().trim() || 'Medida';
 
                     // ¿Alguna fila tiene segunda dimensión?
-                    const tiene2Dims = filas.some(f => (f['VAR_DIM2'] || '').toString().trim() !== '');
+                    // tiene2Dims solo es true si AMBAS dimensiones (VAR_DIM1 y VAR_DIM2) tienen valores.
+                    // Si solo hay VAR_DIM2 (ej: color en columna 2), es producto de UNA sola dimension.
+                    const tiene2Dims = filas.some(f => (f['VAR_DIM1'] || '').toString().trim() !== '') &&
+                                       filas.some(f => (f['VAR_DIM2'] || '').toString().trim() !== '');
 
                     // Valores únicos de DIM1 y DIM2 ordenados numérica/alfabéticamente
                     const dim1Vals = ordenarVars([...new Set(filas.map(f => (f['VAR_DIM1'] || '').toString().trim()).filter(Boolean))]);
@@ -1609,11 +1749,13 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                         || variantes.find(v => v.imagen)?.imagen
                         || 'https://placehold.co/300x300/EEE/3182CE?text=Sin+Imagen';
 
-                    // Eliminar docs individuales viejos (SKUs que ahora son variantes del padre)
-                    for (const docId of [...new Set(idsViejos)]) {
-                        batch.delete(db.collection('productos').doc(docId));
-                        count++;
-                        if (count >= 490) { await batch.commit(); batch = db.batch(); count = 0; }
+                    // Eliminar docs individuales viejos (solo en modo UPSERT)
+                    if (modoImport === 'actualizar') {
+                        for (const docId of [...new Set(idsViejos)]) {
+                            batch.delete(db.collection('productos').doc(docId));
+                            count++;
+                            if (count >= 400) { await commitBatch(batch); batch = db.batch(); count = 0; }
+                        }
                     }
 
                     const productoGrupo = {
@@ -1639,22 +1781,33 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                         fechaActualizacion: new Date()
                     };
 
-                    // Upsert: si ya existe el padre (buscado por su código = GRUPO_ID), actualizar; sino crear
                     const docPadreId = mapaProductos[grupoId];
-                    if (docPadreId) {
-                        batch.update(db.collection('productos').doc(docPadreId), productoGrupo);
-                        actualizados++;
-                    } else {
-                        const newId = Date.now().toString() + Math.floor(Math.random() * 1000);
+                    if (modoImport === 'nuevo') {
+                        // ── INSERT-ONLY: omitir si el grupo ya existe ─────────
+                        if (docPadreId) { omitidos++; continue; }
+                        const newId = db.collection('productos').doc().id;
                         productoGrupo.id = newId;
                         batch.set(db.collection('productos').doc(newId), productoGrupo);
                         creados++;
+                    } else {
+                        // ── UPSERT: actualizar si existe, crear si no ──────────
+                        if (docPadreId) {
+                            batch.update(db.collection('productos').doc(docPadreId), productoGrupo);
+                            actualizados++;
+                        } else {
+                            const newId = db.collection('productos').doc().id;
+                            productoGrupo.id = newId;
+                            batch.set(db.collection('productos').doc(newId), productoGrupo);
+                            creados++;
+                        }
                     }
                     count++;
-                    if (count >= 490) { await batch.commit(); batch = db.batch(); count = 0; }
+                    if (count >= 400) { await commitBatch(batch); batch = db.batch(); count = 0; }
                 }
 
-                if (count > 0) { await batch.commit(); }
+                // Commit del lote final
+                if (count > 0) { await commitBatch(batch); }
+                await actualizarVersionCatalogo();
 
                 // 8. EL REPORTE FINAL INTELIGENTE
                 progressIcon.textContent = 'check_circle';
@@ -1669,12 +1822,23 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
                         </div>`;
                 }
 
+                const modoLabel = modoImport === 'nuevo' ? '✨ Modo: Solo nuevos' : '🔄 Modo: Actualizar todos';
+                const omitidosHtml = modoImport === 'nuevo' && omitidos > 0
+                    ? `<span style="margin-left:8px;background:#FEFCBF;color:#744210;padding:2px 8px;border-radius:10px;font-size:0.8rem;">⏭ ${omitidos} ya existían (omitidos)</span>`
+                    : '';
+
                 progressText.innerHTML = `
-                    <div style="display:flex; flex-direction:column; width: 100%;">
-                        <strong style="color:#22543D; margin-bottom:5px;">¡Base de datos sincronizada!</strong>
-                        <span style="font-size:0.85rem; color:#4A5568;">
-                            ✨ Creados: <strong>${creados}</strong> | 🔄 Actualizados: <strong>${actualizados}</strong> | ❌ Ignorados (Falta de datos): <strong>${ignorados}</strong>
-                        </span>
+                    <div style="display:flex; flex-direction:column; width:100%; gap:6px;">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <strong style="color:#22543D;">¡Carga completada! ${modoLabel}</strong>
+                            ${omitidosHtml}
+                        </div>
+                        <div style="font-size:0.85rem;color:#4A5568;display:flex;gap:12px;flex-wrap:wrap;">
+                            ${creados > 0 ? `<span>✨ <strong>${creados}</strong> nuevos</span>` : ''}
+                            ${actualizados > 0 ? `<span>🔄 <strong>${actualizados}</strong> actualizados</span>` : ''}
+                            ${ignorados > 0 ? `<span>❌ <strong>${ignorados}</strong> sin datos</span>` : ''}
+                            ${omitidos > 0 && modoImport === 'actualizar' ? `<span>⏭ <strong>${omitidos}</strong> omitidos</span>` : ''}
+                        </div>
                         ${alertaCategoria}
                     </div>
                 `;
@@ -1683,9 +1847,17 @@ document.getElementById('csv-file-input').addEventListener('change', function(e)
 
             } catch (error) {
                 console.error("Error en importación masiva:", error);
-                progressText.innerHTML = '<strong>Error de red:</strong> No se pudo sincronizar. Intenta de nuevo.';
                 progressIcon.textContent = 'error';
                 progressIcon.style.color = '#E53E3E';
+                progressText.innerHTML = `
+                    <div style="color:#C53030;">
+                        <strong>⚠️ Error en lote ${loteNum + 1}:</strong> ${error.message || 'Error desconocido'}.<br>
+                        <span style="font-size:0.82rem;color:#4A5568;">
+                            ${creados + actualizados > 0 
+                                ? `Los primeros <strong>${creados + actualizados}</strong> productos SÍ se guardaron. Podés volver a subir el CSV — en modo "Solo nuevos" los duplicados se saltean automáticamente.`
+                                : 'Ningún producto fue guardado. Revisá tu conexión y volvé a intentarlo.'}
+                        </span>
+                    </div>`;
             }
         },
         error: function(error) {
@@ -1757,6 +1929,7 @@ window.borrarSeleccionadosMasivo = async function() {
                 batch.delete(ref);
             });
             await batch.commit();
+            await actualizarVersionCatalogo();
             productosSeleccionados.clear();
             actualizarToolbarMasivo();
             document.getElementById('selectAllCheckbox').checked = false;
@@ -1789,6 +1962,7 @@ window.cambiarEstadoMasivo = async function(campoBD, esActivo) {
                 batch.update(ref, { [campoBD]: esActivo });
             });
             await batch.commit();
+            await actualizarVersionCatalogo();
             productosSeleccionados.clear();
             actualizarToolbarMasivo();
             document.querySelectorAll('.row-checkbox, #selectAllCheckbox').forEach(cb => cb.checked = false);
@@ -1880,33 +2054,53 @@ window.exportarInventarioCSV = async function(btn) {
 
         // ── 4. Función para construir filas de productos ────────────────────
         function buildProductRows(colorear) {
-            return productos.map((p, i) => {
-                const bg = colorear ? (i % 2 === 0 ? WHT : GRY_L) : (i % 2 === 0 ? WHT : GRY_L);
-                const vals = [
-                    p.codigo || 'S/C',
-                    p.nombre || '',
-                    p.marca  || '',
-                    p.categoria || '',
-                    p.precio || 0,
-                    p.stock  !== undefined ? p.stock : 0,
-                    p.vendePorCaja    ? 'SI' : 'NO',
-                    p.unidadesPorCaja || 0,
-                    p.precioCaja      || 0,
-                    p.enOferta ? 'SI' : 'NO',
-                    p.nuevo    ? 'SI' : 'NO',
-                    (p.imagen && !p.imagen.includes('placehold') && !p.imagen.includes('placeholder') ? p.imagen : ''),
-                    p.descripcion || '',
-                    p.grupoId  || '',
-                    p.varDim1  || '',
-                    p.varDim2  || ''
-                ];
-                return vals.map((v, j) => {
-                    const colBg = colorear ? COL_COLORS[j] : null;
-                    const rowBg = i % 2 === 0 ? WHT : GRY_L;
-                    const finalBg = colorear && v !== '' && v !== 0 ? colBg : rowBg;
-                    return cell(v, j === 0, finalBg, j === 0 ? NAV : '4A5568');
-                });
+            const rows = [];
+            productos.forEach((p, i) => {
+                const bg = i % 2 === 0 ? WHT : GRY_L;
+
+                if (p.tieneVariantes && p.variantes && p.variantes.length > 0) {
+                    // ── Producto CON variantes → una fila por variante ──────────────
+                    p.variantes.forEach((v) => {
+                        const vals = [
+                            v.codigo   || p.codigo || 'S/C',
+                            p.nombre   || '',
+                            p.marca    || '',
+                            p.categoria|| '',
+                            v.precio   || p.precio || 0,
+                            v.stock    !== undefined ? v.stock : 0,
+                            'NO', 0, 0,                       // vendePorCaja / unidades / precio caja
+                            p.enOferta ? 'SI' : 'NO',
+                            p.nuevo    ? 'SI' : 'NO',
+                            (v.imagen  || p.imagen || '').includes('placehold') ? '' : (v.imagen || p.imagen || ''),
+                            p.descripcion || '',
+                            p.codigo   || '',                 // ← GRUPO_ID = código del padre
+                            v.varDim1  || '',
+                            v.varDim2  || ''
+                        ];
+                        rows.push(vals.map((val, j) => cell(val, j===0, colorear ? COL_COLORS[j] : null, j===0 ? NAV : '4A5568')));
+                    });
+                } else {
+                    // ── Producto SIMPLE → una sola fila ─────────────────────────────
+                    const vals = [
+                        p.codigo || 'S/C',
+                        p.nombre || '',
+                        p.marca  || '',
+                        p.categoria || '',
+                        p.precio || 0,
+                        p.stock  !== undefined ? p.stock : 0,
+                        p.vendePorCaja    ? 'SI' : 'NO',
+                        p.unidadesPorCaja || 0,
+                        p.precioCaja      || 0,
+                        p.enOferta ? 'SI' : 'NO',
+                        p.nuevo    ? 'SI' : 'NO',
+                        (p.imagen && !p.imagen.includes('placehold') ? p.imagen : ''),
+                        p.descripcion || '',
+                        '', '', ''                            // sin GRUPO_ID ni variantes
+                    ];
+                    rows.push(vals.map((val, j) => cell(val, j===0, colorear ? COL_COLORS[j] : null, j===0 ? NAV : '4A5568')));
+                }
             });
+            return rows;
         }
 
         // ── 5. HOJA 1: PRODUCTOS (formateada con colores por sección) ───────
@@ -1991,12 +2185,38 @@ function _descargarRespaldoCSV(productos) {
         'IMAGEN_URL','DESCRIPCION','GRUPO_ID','VAR_DIM1','VAR_DIM2'];
     let csv = '\uFEFF' + cols.join(SEP) + '\n';
     productos.forEach(p => {
-        csv += [p.codigo||'S/C', p.nombre||'', p.marca||'', p.categoria||'',
-            p.precio||0, p.stock||0,
-            p.vendePorCaja?'SI':'NO', p.unidadesPorCaja||0, p.precioCaja||0,
-            p.enOferta?'SI':'NO', p.nuevo?'SI':'NO',
-            p.imagen||'', p.descripcion||'', p.grupoId||'', p.varDim1||'', p.varDim2||''
-        ].map(esc).join(SEP) + '\n';
+        if (p.tieneVariantes && p.variantes && p.variantes.length > 0) {
+            // Producto CON variantes: una fila por variante, GRUPO_ID = código del padre
+            p.variantes.forEach(v => {
+                const imgV = (v.imagen || p.imagen || '');
+                csv += [
+                    v.codigo   || p.codigo || 'S/C',
+                    p.nombre   || '',
+                    p.marca    || '',
+                    p.categoria|| '',
+                    v.precio   || p.precio || 0,
+                    v.stock    !== undefined ? v.stock : 0,
+                    'NO', 0, 0,
+                    p.enOferta ? 'SI' : 'NO',
+                    p.nuevo    ? 'SI' : 'NO',
+                    imgV.includes('placehold') ? '' : imgV,
+                    p.descripcion || '',
+                    p.codigo   || '',   // GRUPO_ID = código del documento padre
+                    v.varDim1  || '',
+                    v.varDim2  || ''
+                ].map(esc).join(SEP) + '\n';
+            });
+        } else {
+            // Producto SIMPLE: una sola fila sin GRUPO_ID
+            csv += [
+                p.codigo||'S/C', p.nombre||'', p.marca||'', p.categoria||'',
+                p.precio||0, p.stock||0,
+                p.vendePorCaja?'SI':'NO', p.unidadesPorCaja||0, p.precioCaja||0,
+                p.enOferta?'SI':'NO', p.nuevo?'SI':'NO',
+                (p.imagen && !p.imagen.includes('placehold') ? p.imagen : ''),
+                p.descripcion||'', '', '', ''
+            ].map(esc).join(SEP) + '\n';
+        }
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
@@ -2176,6 +2396,7 @@ window.verDetallePedido = async function(id) {
         // Llamamos al motor de dibujado
         window.renderizarFilasEditor();
         document.getElementById('pedido-total-precio').textContent = `$${data.total ? parseInt(data.total).toLocaleString('es-AR') : '0'}`;
+        verificarPreciosPedido();
 
     } catch (error) {
         console.error("Error al cargar detalles:", error);
@@ -2472,6 +2693,7 @@ window.guardarPedidoEditado = async function() {
         });
 
         await batch.commit();
+        await actualizarVersionCatalogo();
         mostrarNotificacionAdmin("Pedido y stock actualizados ✓");
         cerrarModalPedido();
         
@@ -2516,6 +2738,12 @@ window.prepararPlantillaPDF = async function(idPedido) {
         document.getElementById('print-client-phone').textContent = logistica.telefono || 'S/D';
         document.getElementById('print-client-shipping').textContent = logistica.metodoEnvio || '-';
         document.getElementById('print-client-payment').textContent = logistica.metodoPago || '-';
+        document.getElementById('print-client-type').textContent = data.tipoCliente || '-';
+        document.getElementById('print-client-email').textContent = data.emailUsuario || '-';
+        const _notas = (logistica.notas || '').trim();
+        document.getElementById('print-client-notes').textContent = _notas || 'Sin indicaciones';
+        const _notesRow = document.getElementById('print-client-notes-row');
+        if (_notesRow) _notesRow.style.display = _notas ? 'block' : 'none';
 
         const tbody = document.getElementById('print-items-body');
         let htmlFilas = '';
@@ -2602,21 +2830,54 @@ window.descargarCatalogoPDF = async function(btn) {
 
     try {
         // ── 1. Agrupar y ordenar productos ───────────────────────────────
+        // Los productos con variantes embebidas se EXPANDEN: cada variante
+        // genera su propia tarjeta con su código, nombre, precio e imagen
+        // reales (igual que en la tienda). El campo prod.codigo del padre es
+        // solo el nombre del grupo, por eso no debe usarse para las variantes.
+        function expandirProducto(prod) {
+            if (prod.tieneVariantes && Array.isArray(prod.variantes) && prod.variantes.length > 0) {
+                return prod.variantes.map(v => ({
+                    marca:        prod.marca || '',
+                    nombre:       v.nombre || `${prod.nombre || ''}${v.etiqueta ? ' - ' + v.etiqueta : ''}`,
+                    codigo:       v.codigo || prod.codigo || 'S/C',
+                    precio:       (v.precio != null && v.precio !== '') ? v.precio : prod.precio,
+                    imagen:       v.imagen || prod.imagen,
+                    enOferta:     prod.enOferta,
+                    nuevo:        prod.nuevo,
+                    vendePorCaja: false   // las variantes no manejan precio por caja
+                }));
+            }
+            return [{
+                marca:           prod.marca || '',
+                nombre:          prod.nombre || '',
+                codigo:          prod.codigo || 'S/C',
+                precio:          prod.precio,
+                imagen:          prod.imagen,
+                enOferta:        prod.enOferta,
+                nuevo:           prod.nuevo,
+                vendePorCaja:    prod.vendePorCaja,
+                precioCaja:      prod.precioCaja,
+                unidadesPorCaja: prod.unidadesPorCaja
+            }];
+        }
+
         const grupos = {};
         productosAdmin.forEach(prod => {
             const cat = (prod.categoria || 'OTROS').toUpperCase();
             if (!grupos[cat]) grupos[cat] = [];
-            grupos[cat].push(prod);
+            expandirProducto(prod).forEach(entrada => grupos[cat].push(entrada));
         });
 
+        let totalTarjetas = 0;
         let htmlProductos = '';
         Object.keys(grupos).sort().forEach(cat => {
 
             htmlProductos += `<div class="cat-header">${cat}</div><div class="products-grid">`;
 
             grupos[cat]
-                .sort((a, b) => ((a.marca||'')+(a.nombre||'')).localeCompare((b.marca||'')+(b.nombre||'')))
+                .sort((a, b) => (a.codigo||'').localeCompare((b.codigo||''), 'es', { numeric: true, sensitivity: 'base' }))
                 .forEach(prod => {
+                    totalTarjetas++;
                     const tieneImg = prod.imagen && prod.imagen.startsWith('http') && !prod.imagen.includes('placehold');
                     const precio   = prod.precio ? `$${parseInt(prod.precio).toLocaleString('es-AR')}` : 'Consultar';
                     const badge    = prod.enOferta
@@ -2694,7 +2955,7 @@ body { font-family: Arial, sans-serif; font-size: 10px; background: white; paddi
     <div class="header-info">
         <h1>Catálogo de Productos</h1>
         <p>Depósito: Ushuaia 331, Oberá, Misiones &nbsp;|&nbsp; WhatsApp: +54 9 3755 503213</p>
-        <p>Lista de precios actualizada al: <strong>${fecha}</strong> &nbsp;|&nbsp; <strong>${productosAdmin.length} productos</strong></p>
+        <p>Lista de precios actualizada al: <strong>${fecha}</strong> &nbsp;|&nbsp; <strong>${totalTarjetas} productos</strong></p>
     </div>
 </div>
 
@@ -3098,6 +3359,7 @@ window.confirmarVentaPOS = async function() {
 
         // 4. ¡Disparar a Firebase!
         await batch.commit();
+        await actualizarVersionCatalogo();
 
         mostrarNotificacionAdmin("Venta registrada y stock actualizado ✓");
         cerrarPuntoDeVenta();
@@ -3401,6 +3663,10 @@ async function cargarUsuariosAprobados() {
                 <td style="padding:10px 12px;">
                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
                         ${botonesAccion}
+                        <button onclick="editarUsuario('${uid}')"
+                            style="background:#3182CE;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.78rem;display:flex;align-items:center;gap:4px;">
+                            <span class="material-icons" style="font-size:0.9rem;">edit</span> EDITAR
+                        </button>
                         <button onclick="eliminarCuentaUsuario('${uid}', '${(d.nombre||'').replace(/'/g,'')}', '${d.email||''}')"
                             style="background:#E53E3E;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.78rem;display:flex;align-items:center;gap:4px;">
                             <span class="material-icons" style="font-size:0.9rem;">delete</span> ELIMINAR
@@ -3478,6 +3744,77 @@ window.eliminarCuentaUsuario = async function(uid, nombre, email) {
         console.error(err);
     }
 };
+
+// ── Editar usuario registrado (modifica el documento en "usuarios") ───────────
+window.editarUsuario = async function(uid) {
+    const errBox = document.getElementById('edit-usr-error');
+    if (errBox) errBox.style.display = 'none';
+    try {
+        const doc = await db.collection('usuarios').doc(uid).get();
+        if (!doc.exists) { alert('No se encontró el usuario.'); return; }
+        const d = doc.data();
+        document.getElementById('edit-usr-uid').value       = uid;
+        document.getElementById('edit-usr-nombre').value    = d.nombre    || '';
+        document.getElementById('edit-usr-dni').value       = d.dni       || '';
+        document.getElementById('edit-usr-email').value     = d.email     || '';
+        document.getElementById('edit-usr-negocio').value   = d.negocio   || '';
+        document.getElementById('edit-usr-cuit').value      = d.cuit      || '';
+        document.getElementById('edit-usr-telefono').value  = d.telefono  || '';
+        document.getElementById('edit-usr-ciudad').value    = d.ciudad    || d.localidad || '';
+        document.getElementById('edit-usr-direccion').value = d.direccion || '';
+        document.getElementById('modal-editar-usuario').style.display = 'flex';
+    } catch (err) {
+        alert('Error al cargar el usuario: ' + err.message);
+        console.error(err);
+    }
+};
+
+window.cerrarModalEditarUsuario = function() {
+    const m = document.getElementById('modal-editar-usuario');
+    if (m) m.style.display = 'none';
+};
+
+// Guardar cambios — texto en MAYÚSCULAS (el email es la llave del login, no se toca)
+const formEditarUsuario = document.getElementById('form-editar-usuario');
+if (formEditarUsuario) {
+    formEditarUsuario.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const up  = (s) => (s || '').trim().toUpperCase();
+        const uid = document.getElementById('edit-usr-uid').value;
+        const errBox = document.getElementById('edit-usr-error');
+        const nombre = up(document.getElementById('edit-usr-nombre').value);
+        if (!uid) return;
+        if (!nombre) {
+            if (errBox) { errBox.textContent = 'El nombre es obligatorio.'; errBox.style.display = 'block'; }
+            return;
+        }
+
+        const cambios = {
+            nombre,
+            dni:       document.getElementById('edit-usr-dni').value.trim(),
+            negocio:   up(document.getElementById('edit-usr-negocio').value),
+            cuit:      document.getElementById('edit-usr-cuit').value.trim(),
+            telefono:  document.getElementById('edit-usr-telefono').value.trim(),
+            ciudad:    up(document.getElementById('edit-usr-ciudad').value),
+            direccion: up(document.getElementById('edit-usr-direccion').value)
+        };
+
+        const btn = document.getElementById('edit-usr-submit-btn');
+        const txtOriginal = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Guardando...'; }
+        try {
+            await db.collection('usuarios').doc(uid).update(cambios);
+            cerrarModalEditarUsuario();
+            mostrarNotificacionAdmin('✅ Usuario actualizado correctamente.');
+            cargarUsuariosAprobados();
+        } catch (err) {
+            if (errBox) { errBox.textContent = 'Error al guardar: ' + err.message; errBox.style.display = 'block'; }
+            console.error(err);
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = txtOriginal; }
+        }
+    });
+}
 
 // ── Solicitudes RECHAZADAS ────────────────────────────────────────────────────
 async function cargarSolicitudesRechazadas() {
@@ -3651,7 +3988,107 @@ window.mostrarSeccion = function(seccion) {
         cargarSolicitudesPendientes();
     }
 };
+// ═══════════════════════════════════════════════════════════════════════════
+// VERIFICADOR AUTOMÁTICO DE PRECIOS — se ejecuta al abrir cada pedido
+// Compara el precio registrado en cada ítem del pedido contra el precio
+// real actual del catálogo. Si hay discrepancia, muestra una alerta clara.
+// ═══════════════════════════════════════════════════════════════════════════
 
+function verificarPreciosPedido() {
+    const items = (window.pedidoActualEditando || {}).items || [];
+    if (!items.length || !productosAdmin.length) return;
+
+    let totalRegistrado = 0;
+    let totalCatalogo   = 0;
+    let discrepancias   = [];
+
+    items.forEach(item => {
+        const idStr       = String(item.id);
+        const subtRegistrado = (item.precio || 0) * (item.cantidad || 0);
+        totalRegistrado += subtRegistrado;
+
+        // Buscar precio real en el catálogo cargado en memoria
+        let precioReal = null;
+
+        if (idStr.includes('_VAR_')) {
+            const padreId = idStr.split('_VAR_')[0];
+            const varCode = idStr.split('_VAR_').slice(1).join('_VAR_');
+            const padre   = productosAdmin.find(p => p.id === padreId);
+            if (padre && padre.variantes) {
+                const variante = padre.variantes.find(v => (v.codigo || v.id) === varCode);
+                if (variante) precioReal = parseFloat(variante.precio) || 0;
+            }
+        } else if (idStr.includes('_CAJA')) {
+            const idReal = idStr.replace('_CAJA', '');
+            const prod   = productosAdmin.find(p => p.id === idReal);
+            if (prod) precioReal = parseFloat(prod.precioCaja) || 0;
+        } else {
+            const prod = productosAdmin.find(p => p.id === idStr);
+            if (prod) precioReal = parseFloat(prod.precio) || 0;
+        }
+
+        if (precioReal !== null) {
+            totalCatalogo += precioReal * (item.cantidad || 0);
+            if (Math.abs(precioReal - (item.precio || 0)) > 0.5) {
+                discrepancias.push({
+                    nombre: item.nombre,
+                    precioRegistrado: item.precio || 0,
+                    precioCatalogo:   precioReal
+                });
+            }
+        } else {
+            // Producto ya no existe en catálogo — no se puede verificar
+            totalCatalogo += subtRegistrado;
+        }
+    });
+
+    // Crear o actualizar el banner de verificación
+    let banner = document.getElementById('verificacion-precios-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'verificacion-precios-banner';
+        banner.style.cssText = 'margin:0 0 12px 0;padding:10px 14px;border-radius:8px;font-size:0.85rem;line-height:1.6;';
+        const infoCliente = document.getElementById('pedido-cliente-info');
+        if (infoCliente) infoCliente.parentNode.insertBefore(banner, infoCliente.nextSibling);
+    }
+
+    const fmt = n => '$' + parseInt(n).toLocaleString('es-AR');
+
+    if (discrepancias.length === 0) {
+        banner.style.background = '#F0FFF4';
+        banner.style.border     = '1px solid #9AE6B4';
+        banner.style.color      = '#276749';
+        banner.innerHTML = `<strong>✓ Precios verificados</strong> — Todos los ítems coinciden con el catálogo actual. Total: <strong>${fmt(totalCatalogo)}</strong>`;
+    } else {
+        banner.style.background = '#FFF5F5';
+        banner.style.border     = '1px solid #FEB2B2';
+        banner.style.color      = '#C53030';
+
+        let detalle = discrepancias.map(d =>
+            `<br>&nbsp;&nbsp;• <strong>${d.nombre}</strong>: registrado ${fmt(d.precioRegistrado)} → catálogo actual ${fmt(d.precioCatalogo)}`
+        ).join('');
+
+        banner.innerHTML =
+            `<strong>⚠ Discrepancia de precios detectada</strong>` +
+            `<br>Total registrado: <strong>${fmt(totalRegistrado)}</strong> — Total según catálogo: <strong>${fmt(totalCatalogo)}</strong>` +
+            `<br>Diferencia: <strong>${fmt(Math.abs(totalCatalogo - totalRegistrado))}</strong>` +
+            detalle;
+    }
+}
+// =================================================================
+// VERSION DEL CATALOGO
+// Actualiza config/catalogo para que los clientes recarguen su cache.
+// =================================================================
+async function actualizarVersionCatalogo() {
+    try {
+        await db.collection('config').doc('catalogo').set({
+            version:        firebase.firestore.FieldValue.serverTimestamp(),
+            actualizadoPor: 'admin'
+        }, { merge: true });
+    } catch (e) {
+        console.warn('No se pudo actualizar version del catalogo:', e);
+    }
+}
 //pasos para subir este repositorio a github:
 //1. git init
 //2. git add .

@@ -28,6 +28,13 @@ const storage = firebase.storage();
 let inventario    = [];
 let usuarioEsVIP  = false; // false por defecto — se activa solo si admin aprueba
 
+/* Escapa texto antes de inyectarlo con innerHTML (previene XSS) */
+function escHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 /* ── Constante centralizada: monto mínimo para envío gratis ──────────────
    Cambiar SOLO AQUÍ — se aplica automáticamente en la barra del carrito
    y en cualquier otro lugar que la referencie.
@@ -46,7 +53,15 @@ let estado = {
     productosFiltrados: []
 };
 
-let carrito = JSON.parse(localStorage.getItem('carritoEnzo')) || [];
+let carrito = (() => {
+    try {
+        return JSON.parse(localStorage.getItem('carritoEnzo')) || [];
+    } catch(e) {
+        // JSON corrupto en localStorage — limpiar y arrancar con carrito vacío
+        localStorage.removeItem('carritoEnzo');
+        return [];
+    }
+})();
 
 
 // ── Estado global del selector de variantes (tarjeta + detalle) ──────────────
@@ -54,16 +69,22 @@ window._vsState = {};  // { prodId: { dim1, dim2 } }
 
 function initVsState(prod) {
     if (_vsState[prod.id]) return;
-    const v0 = prod.variantes && prod.variantes[0];
-    _vsState[prod.id] = { dim1: v0?.varDim1 || null, dim2: v0?.varDim2 || null };
+    const v0 = prod.variantes && (prod.variantes.find(v => v.varDim1 || v.varDim2) || prod.variantes[0]);
+    // Si solo tiene varDim2 (varDim1=null), usarla como dimension primaria
+    const d1 = v0?.varDim1 || v0?.varDim2 || null;
+    const d2 = v0?.varDim1 ? (v0?.varDim2 || null) : null;
+    _vsState[prod.id] = { dim1: d1, dim2: d2 };
 }
 
 function getSelectedVariante(prod) {
     if (!prod.tieneVariantes || !prod.variantes || !prod.variantes.length) return null;
     const state = _vsState[prod.id] || {};
     return prod.variantes.find(v => {
-        const d1ok = !state.dim1 || v.varDim1 === state.dim1;
-        const d2ok = !state.dim2 || v.varDim2 === state.dim2;
+        // dim1 puede estar en varDim1 o en varDim2 (productos importados con varDim1=null)
+        const vd1 = (v.varDim1 || v.varDim2 || '').trim();
+        const d1ok = !state.dim1 || vd1 === state.dim1.trim();
+        // dim2 solo aplica si la variante tiene varDim1 Y varDim2 separados
+        const d2ok = !state.dim2 || (v.varDim1 && (v.varDim2 || '').trim() === state.dim2.trim());
         return d1ok && d2ok;
     }) || prod.variantes[0];
 }
@@ -75,10 +96,10 @@ function buildVsInnerHTML(prod) {
     const varSel = getSelectedVariante(prod);
     const lbl1   = prod.labelDim1 || 'Presentación';
     const lbl2   = prod.labelDim2 || 'Medida';
-    const esc    = s => String(s).replace(/'/g, "\\'");
+    const esc    = s => String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const btnB   = 'padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all .12s;';
 
-    const dim1Vals = [...new Set(prod.variantes.map(v => v.varDim1).filter(Boolean))];
+    const dim1Vals = [...new Set(prod.variantes.map(v => ((v.varDim1 || v.varDim2) || '').trim()).filter(Boolean))];
     const dim2Vals = [...new Set(
         prod.variantes.filter(v => !state.dim1 || v.varDim1 === state.dim1).map(v => v.varDim2).filter(Boolean)
     )];
@@ -182,11 +203,11 @@ function _vsmRenderSelector() {
     const varSel  = getSelectedVariante(prod);
     const lbl1    = prod.labelDim1 || 'Presentación';
     const lbl2    = prod.labelDim2 || 'Medida';
-    const esc     = s => String(s).replace(/'/g, "\'");
+    const esc     = s => String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const bOn     = 'padding:7px 16px;border-radius:20px;font-size:0.88rem;font-weight:700;cursor:pointer;transition:all .12s;border:2px solid #3182CE;background:#3182CE;color:white;';
     const bOff    = 'padding:7px 16px;border-radius:20px;font-size:0.88rem;font-weight:700;cursor:pointer;transition:all .12s;border:2px solid #CBD5E0;background:white;color:#4A5568;';
 
-    const dim1Vals = [...new Set(prod.variantes.map(v => v.varDim1).filter(Boolean))];
+    const dim1Vals = [...new Set(prod.variantes.map(v => ((v.varDim1 || v.varDim2) || '').trim()).filter(Boolean))];
     const dim2Vals = [...new Set(
         prod.variantes.filter(v => !state.dim1 || v.varDim1 === state.dim1).map(v => v.varDim2).filter(Boolean)
     )];
@@ -349,21 +370,20 @@ window.vsModalConfirmar = function() {
     actualizarBadgeCarrito();
     renderizarCarrito();
     vsModalCerrar();
-    abrirCarrito();
     mostrarNotificacion(`"${varSel.etiqueta}" agregado al carrito ✓`);
 };
 
 // ── Selector embebido para la PÁGINA DE DETALLE ───────────────────────────────
 
 function _renderizarSelectorEmbebido(prod, container) {
-    initVsState(prod);
+    if (!_vsState[prod.id]) initVsState(prod); // solo inicializa si no existe estado
     const state = _vsState[prod.id];
     const lbl1  = prod.labelDim1 || 'Presentación';
     const lbl2  = prod.labelDim2 || 'Medida';
-    const esc   = s => String(s).replace(/'/g, "\\'");
+    const esc   = s => String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const bS    = on => `padding:7px 18px;border-radius:20px;font-size:0.88rem;font-weight:700;cursor:pointer;transition:all .15s;border:2px solid ${on?'var(--primary-blue,#2B6CB0)':'#CBD5E0'};background:${on?'var(--primary-blue,#2B6CB0)':'white'};color:${on?'white':'var(--primary-blue,#2B6CB0)'};`;
 
-    const dim1Vals = [...new Set(prod.variantes.map(v => v.varDim1).filter(Boolean))];
+    const dim1Vals = [...new Set(prod.variantes.map(v => ((v.varDim1 || v.varDim2) || '').trim()).filter(Boolean))];
     const dim2Vals = [...new Set(
         prod.variantes.filter(v => !state.dim1 || v.varDim1 === state.dim1).map(v => v.varDim2).filter(Boolean)
     )];
@@ -416,7 +436,30 @@ function _actualizarDetalleVarianteEmbebida(prod) {
     if (nameEl && varSel.nombre) nameEl.textContent = varSel.nombre;
 
     const skuEl = document.getElementById('detalle-sku');
-    if (skuEl && varSel.codigo) skuEl.innerHTML = `<span class="material-icons" style="font-size:1rem;margin-right:5px;">qr_code_2</span> CÓD: ${varSel.codigo}`;
+    if (skuEl) {
+        // varSel.codigo || varSel.id : igual que el modal (la segunda es el id del variant)
+        const _varCode  = (varSel.codigo || varSel.id || '').trim();
+        const _codigoVar = (() => {
+            // Si el variant tiene codigo/id distinto al del padre, usarlo directo
+            if (_varCode && _varCode !== (prod.codigo || '').trim()) return _varCode;
+            // Fallback: construir PADRE-DIM1[-DIM2]
+            const base  = (prod.codigo || '').trim();
+            const parts = [varSel.varDim1, varSel.varDim2]
+                .filter(Boolean)
+                .map(d => d.trim().replace(/\s+/g, '-').toUpperCase());
+            return parts.length
+                ? (base ? base + '-' + parts.join('-') : parts.join('-'))
+                : (_varCode || base || 'S/C');
+        })();
+        skuEl.innerHTML = `<span class="material-icons" style="font-size:1rem;margin-right:5px;">qr_code_2</span> CÓD: ${_codigoVar}`;
+    }
+
+    // Actualizar descripcion
+    const descElVar = document.getElementById('detail-desc');
+    if (descElVar) {
+        const descTexto = varSel.descripcion || prod.descripcion || 'Sin descripción.';
+        descElVar.textContent = descTexto;
+    }
 
     const btnAdd   = document.getElementById('detail-add-btn');
     const inputQty = document.querySelector('.big-selector input');
@@ -435,7 +478,7 @@ function _actualizarDetalleVarianteEmbebida(prod) {
 }
 
 window.vsDetD1 = function(prodId, dim1) {
-    const prod = inventario.find(p => p.id === prodId);
+    const prod = inventario.find(p => p.id === prodId) || window._detalleProductoActual;
     if (!prod) return;
     if (!_vsState[prodId]) initVsState(prod);
     _vsState[prodId].dim1 = dim1;
@@ -446,10 +489,24 @@ window.vsDetD1 = function(prodId, dim1) {
     const container = document.getElementById('variantes-selector-container');
     if (container) _renderizarSelectorEmbebido(prod, container);
     _actualizarDetalleVarianteEmbebida(prod);
+    // Update directo: garantiza que el SKU se actualice aunque falle la cadena
+    (function() {
+        const skuEl = document.getElementById('detalle-sku');
+        if (!skuEl) return;
+        const varSel = getSelectedVariante(prod);
+        if (!varSel) return;
+        const vCode = (varSel.codigo || varSel.id || '').trim();
+        const pCode = (prod.codigo || '').trim();
+        const parts = [varSel.varDim1, varSel.varDim2].filter(Boolean)
+            .map(d => d.trim().replace(/\s+/g,'-').toUpperCase());
+        const disp = (vCode && vCode !== pCode) ? vCode
+            : (parts.length ? (pCode ? pCode+'-'+parts.join('-') : parts.join('-')) : (vCode||pCode||'S/C'));
+        skuEl.innerHTML = `<span class="material-icons" style="font-size:1rem;margin-right:5px;">qr_code_2</span> CÓD: ${disp}`;
+    })();
 };
 
 window.vsDetD2 = function(prodId, dim2) {
-    const prod = inventario.find(p => p.id === prodId);
+    const prod = inventario.find(p => p.id === prodId) || window._detalleProductoActual;
     if (!prod) return;
     if (!_vsState[prodId]) initVsState(prod);
     _vsState[prodId].dim2 = dim2;
@@ -463,6 +520,19 @@ window.vsDetD2 = function(prodId, dim2) {
         });
     }
     _actualizarDetalleVarianteEmbebida(prod);
+    (function() {
+        const skuEl = document.getElementById('detalle-sku');
+        if (!skuEl) return;
+        const varSel = getSelectedVariante(prod);
+        if (!varSel) return;
+        const vCode = (varSel.codigo || varSel.id || '').trim();
+        const pCode = (prod.codigo || '').trim();
+        const parts = [varSel.varDim1, varSel.varDim2].filter(Boolean)
+            .map(d => d.trim().replace(/\s+/g,'-').toUpperCase());
+        const disp = (vCode && vCode !== pCode) ? vCode
+            : (parts.length ? (pCode ? pCode+'-'+parts.join('-') : parts.join('-')) : (vCode||pCode||'S/C'));
+        skuEl.innerHTML = `<span class="material-icons" style="font-size:1rem;margin-right:5px;">qr_code_2</span> CÓD: ${disp}`;
+    })();
 };
 
 
@@ -471,7 +541,7 @@ window.vsDetD2 = function(prodId, dim2) {
    Evita ir a Firebase en cada página si el catálogo ya se descargó.
    TTL: 10 minutos. Se invalida al hacer cambios desde el admin.
    ========================================================================== */
-const CACHE_KEY = 'enzoInventarioCache';
+const CACHE_KEY = 'enzoInvCache_v4'; // v4: fuerza recarga para orden correcto
 const CACHE_TTL = 1 * 60 * 1000; // 1 minuto — productos con variantes se ven actualizados rápido
 
 function guardarCacheInventario(data) {
@@ -518,6 +588,16 @@ async function cargarProductosDesdeFirebase() {
     const cached = leerCacheInventario();
     if (cached && cached.length > 0) {
         inventario = cached;
+    inventario.sort((a, b) => {
+        const getCod = p => {
+            if (p.tieneVariantes && p.variantes && p.variantes.length > 0) {
+                const v = p.variantes[0];
+                return (v.codigo || v.id || p.codigo || '').toLowerCase();
+            }
+            return (p.codigo || '\uFFFF').toLowerCase();
+        };
+        return getCod(a).localeCompare(getCod(b), 'es', { numeric: true });
+    });
         console.log(`Inventario desde caché: ${inventario.length} productos`);
         renderizarSegunPagina();
         return;
@@ -531,6 +611,16 @@ async function cargarProductosDesdeFirebase() {
             inventario.push({ id: doc.id, ...doc.data() });
         });
         console.log(`Inventario desde Firebase: ${inventario.length} productos`);
+    inventario.sort((a, b) => {
+        const getCod = p => {
+            if (p.tieneVariantes && p.variantes && p.variantes.length > 0) {
+                const v = p.variantes[0];
+                return (v.codigo || v.id || p.codigo || '').toLowerCase();
+            }
+            return (p.codigo || '\uFFFF').toLowerCase();
+        };
+        return getCod(a).localeCompare(getCod(b), 'es', { numeric: true });
+    });
         guardarCacheInventario(inventario);
         renderizarSegunPagina();
     } catch (error) {
@@ -578,6 +668,18 @@ function renderizarSegunPagina() {
             if (titulo) titulo.textContent = `Resultados para: "${urlSearch}"`;
         }
 
+        // Restaurar filtros SOLO si venimos del detalle (_fromDetail presente)
+        const _savedE = sessionStorage.getItem('_catEstado');
+        const _fromDet = sessionStorage.getItem('_fromDetail');
+        if (_fromDet && _savedE) { try {
+            const _e = JSON.parse(_savedE);
+            if (_e.categoria)    estado.categoria    = _e.categoria;
+            if (_e.paginaActual) estado.paginaActual = _e.paginaActual;
+            if (_e.busqueda)     estado.busqueda     = _e.busqueda;
+            estado.soloOfertas   = _e.soloOfertas   || false;
+            estado.soloVariantes = _e.soloVariantes || false;
+            estado.soloNuevos    = _e.soloNuevos    || false;
+        } catch(e) {} }
         aplicarFiltrosGlobales();
     }
 
@@ -601,6 +703,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // C. Interfaz común
     actualizarBadgeCarrito();
     iniciarInterfaz();
+    configurarHeaderScroll();
+    configurarNavHero();
     configurarEventosCarrito();
     activarDragCarruseles();
     configurarModalsServicios();
@@ -626,6 +730,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // G. Formulario de solicitud de acceso (cuenta.html)
     configurarFormularioSolicitud();
 
+    // H. A11y: inputs sin <label> usan su placeholder como nombre accesible
+    document.querySelectorAll('input[placeholder]:not([aria-label]), textarea[placeholder]:not([aria-label])')
+        .forEach(el => el.setAttribute('aria-label', el.placeholder));
+
     console.log("Sistema cargado correctamente.");
 });
 
@@ -633,6 +741,8 @@ document.addEventListener('DOMContentLoaded', function () {
    6. VERIFICACIÓN DE SESIÓN Y LÓGICA VIP POR APROBACIÓN
    ========================================================================== */
 function verificarSesionUsuario() {
+    const ADMIN_EMAIL = 'distribuidoraenzo28@gmail.com';
+
     auth.onAuthStateChanged(async (user) => {
         usuarioActual = user;
 
@@ -642,11 +752,40 @@ function verificarSesionUsuario() {
         const solicitudBox  = document.getElementById('solicitud-box');
 
         if (user) {
+            // Mostrar skeleton inmediato en cuenta.html
+            const _skel = document.getElementById('auth-skeleton');
+            const _af   = document.getElementById('auth-forms');
+            const _ud   = document.getElementById('user-dashboard');
+            if (_skel && _af && _ud && !_af.classList.contains('hidden')) {
+                _af.classList.add('hidden');
+                _skel.style.display = 'block';
+            }
+
+            // Si el admin llega a cuenta.html: cerrar su sesion para poder entrar como cliente
+            if (user.email === ADMIN_EMAIL && window.location.pathname.includes('cuenta')) {
+                const _af  = document.getElementById('auth-forms');
+                const _sk  = document.getElementById('auth-skeleton');
+                const _ud  = document.getElementById('user-dashboard');
+                if (_sk)  _sk.style.display = 'none';
+                if (_ud)  _ud.classList.add('hidden');
+                if (_af)  _af.classList.remove('hidden');
+                sessionStorage.removeItem('perfil_' + user.uid);
+                auth.signOut();
+                return;
+            }
+
             // Verificar si el admin aprobó este usuario en Firestore
             let aprobado = false;
             let nombre   = user.displayName ? user.displayName.split(' ')[0] : 'Usuario';
             let foto     = user.photoURL;
 
+            const _ck = 'perfil_' + user.uid;
+            try { const _c = sessionStorage.getItem(_ck);
+                if (_c) { const _d = JSON.parse(_c);
+                    if (_d.aprobado) { aprobado = true; window._perfilUsuario = _d; window._perfilUsuarioId = user.uid; }
+                    if (_d.nombre) nombre = _d.nombre.split(' ')[0];
+                    if (_d.foto) foto = _d.foto; }
+            } catch(e) {}
             try {
                 const docUsuario = await db.collection("usuarios").doc(user.uid).get();
                 if (docUsuario.exists) {
@@ -654,6 +793,13 @@ function verificarSesionUsuario() {
                     aprobado   = data.aprobado === true;
                     if (data.foto)   foto   = data.foto;
                     if (data.nombre) nombre = data.nombre.split(' ')[0];
+                    sessionStorage.setItem(_ck, JSON.stringify(data));
+                    // Guardar perfil para pre-llenar checkout
+                    if (aprobado) {
+                        window._perfilUsuario  = data;
+                        window._perfilUsuarioId = docUsuario.id;
+                        cargarSetFavoritos(user.uid);
+                    }
 
                     // Actualizar nombre completo en dashboard
                     const profileName = document.getElementById('profile-name');
@@ -681,14 +827,17 @@ function verificarSesionUsuario() {
                 authForms.classList.add('hidden');
                 if (solicitudBox) solicitudBox.classList.add('hidden');
                 userDashboard.classList.remove('hidden');
+                const _skelEl = document.getElementById('auth-skeleton');
+                if (_skelEl) _skelEl.style.display = 'none';
 
                 const profileEmail = document.getElementById('profile-email');
                 if (profileEmail) profileEmail.textContent = user.email;
 
-                const picContainer = document.getElementById('profile-pic');
-                if (picContainer && foto) {
-                    picContainer.innerHTML = `<img src="${foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-                }
+                // Mostrar foto de perfil en dashboard
+                const avImg = document.getElementById('profile-avatar-img');
+                const avIco = document.getElementById('profile-avatar-icon');
+                if (avImg && foto) { avImg.src = foto; avImg.style.display = 'block'; }
+                if (avIco && foto) avIco.style.display = 'none';
 
                 const previewEdit = document.getElementById('preview-edit-perfil');
                 if (previewEdit && foto) previewEdit.src = foto;
@@ -798,8 +947,10 @@ async function enviarSolicitudAcceso() {
     }
     if (errDiv) errDiv.style.display = 'none';
 
+    // Datos de texto en MAYÚSCULAS para prolijidad (el email NO, es la llave del login)
+    const up = (s) => (s || '').toUpperCase();
     const datos = {
-        nombre, dni, negocio, telefono, cuit, ciudad, direccion, email,
+        nombre: up(nombre), dni, negocio: up(negocio), telefono, cuit, ciudad: up(ciudad), direccion: up(direccion), email,
         fecha:    new Date(),
         estado:   'pendiente',
         aprobado: false
@@ -931,61 +1082,9 @@ if (authContainer) {
         });
     }
 
-    // Edición de perfil (solo para usuarios aprobados)
-    window.abrirEditarPerfil = function () {
-        const user = auth.currentUser;
-        if (user) {
-            document.getElementById('edit-nombre').value = user.displayName || '';
-            document.getElementById('preview-edit-perfil').src = user.photoURL || "https://via.placeholder.com/150";
-            document.getElementById('modal-editar-perfil').classList.add('active');
-            document.getElementById('modal-overlay').classList.add('active');
-        } else {
-            alert("Debes iniciar sesión para editar tu perfil.");
-        }
-    };
-
-    const formEdit = document.getElementById('form-editar-perfil');
-    if (formEdit) {
-        formEdit.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const user = auth.currentUser;
-            if (!user) return;
-
-            const btn         = formEdit.querySelector('button[type="submit"]');
-            const nuevoNombre = document.getElementById('edit-nombre').value;
-            const inputFoto   = document.getElementById('edit-foto');
-
-            try {
-                btn.textContent = "Guardando...";
-                btn.disabled    = true;
-
-                let nuevaFotoBase64 = null;
-                if (inputFoto.files.length > 0) {
-                    const file = inputFoto.files[0];
-                    if (file.size > 500 * 1024) {
-                        alert("La imagen es muy pesada (Máx 500KB).");
-                        btn.textContent = "GUARDAR CAMBIOS";
-                        btn.disabled    = false;
-                        return;
-                    }
-                    nuevaFotoBase64 = await imagenATexto(file);
-                }
-
-                await user.updateProfile({ displayName: nuevoNombre });
-
-                const datosActualizar = { nombre: nuevoNombre, email: user.email };
-                if (nuevaFotoBase64) datosActualizar.foto = nuevaFotoBase64;
-
-                await db.collection("usuarios").doc(user.uid).set(datosActualizar, { merge: true });
-                mostrarNotificacion("¡Perfil actualizado! ✅");
-                setTimeout(() => window.location.reload(), 1000);
-            } catch (error) {
-                alert("Error al actualizar: " + error.message);
-                btn.textContent = "GUARDAR CAMBIOS";
-                btn.disabled    = false;
-            }
-        });
-    }
+    /* La edición de perfil (abrirEditarPerfil + submit de #form-editar-perfil)
+       vive en el script inline de cuenta.html — acá había una versión vieja
+       duplicada que apuntaba a IDs inexistentes y rompía el guardado. */
 }
 
 // Auxiliar base64
@@ -999,6 +1098,8 @@ const imagenATexto = (file) => new Promise((resolve, reject) => {
 // Cerrar sesión global
 window.cerrarSesionTotal = function () {
     if (confirm("¿Seguro que quieres salir?")) {
+        const _so_uid = auth.currentUser ? auth.currentUser.uid : null;
+        if (_so_uid) sessionStorage.removeItem('perfil_' + _so_uid);
         auth.signOut().then(() => window.location.reload());
     }
 };
@@ -1065,6 +1166,32 @@ function configurarListenersSidebar() {
         });
     });
 
+    const btnNuevoIngreso = document.getElementById('btn-filtro-nuevo');
+    if (btnNuevoIngreso) {
+        btnNuevoIngreso.addEventListener('click', (e) => {
+            e.preventDefault();
+            estado.soloNuevos = !estado.soloNuevos;
+            btnNuevoIngreso.style.color      = estado.soloNuevos ? '#38A169' : '';
+            btnNuevoIngreso.style.fontWeight = estado.soloNuevos ? 'bold' : '';
+            estado.paginaActual = 1;
+            aplicarFiltrosGlobales();
+            cerrarSidebarMovil();
+        });
+    }
+
+    const btnVariantesFiltro = document.getElementById('btn-filtro-variantes');
+    if (btnVariantesFiltro) {
+        btnVariantesFiltro.addEventListener('click', (e) => {
+            e.preventDefault();
+            estado.soloVariantes = !estado.soloVariantes;
+            btnVariantesFiltro.style.color = estado.soloVariantes ? '#2B6CB0' : '';
+            btnVariantesFiltro.style.fontWeight = estado.soloVariantes ? 'bold' : '';
+            estado.paginaActual = 1;
+            aplicarFiltrosGlobales();
+            cerrarSidebarMovil();
+        });
+    }
+
     const btnOferta = document.getElementById('btn-filtro-ofertas');
     if (btnOferta) {
         btnOferta.addEventListener('click', (e) => {
@@ -1099,18 +1226,110 @@ function resetearBotonesPrecio() {
     });
 }
 
+// Mapa de prefijos para filtrado por categoría padre (desde banners del home u otros links)
+const CATEGORIAS_PADRE = {
+    'griferias':    ['griferia-bano','griferia-cocina','griferia-jardin','griferia-repuestos','griferia-accesorios'],
+    'herramientas': ['electricas','manuales','inalambricas','herr-accesorios','herr-cajas','herr-tanzas'],
+    'iluminacion':  ['ilum-led','ilum-especiales','ilum-plafones','ilum-reflectores','ilum-tubos','ilum-apliques','ilum-colgantes','ilum-exterior'],
+    'pintureria':   ['pintura-interior','pintura-pinceles','pintura-lijas','pintura-disolventes','pintura-imper','pintura-aerosol'],
+    'electricidad': ['cables','protecciones','elec-termicas','tomas e interruptores','elec-fichas','elec-tableros','cintas'],
+    'buloneria':    ['tornillos','tuercas y arandelas','bulones','tarugos y fijaciones','clavos','remaches'],
+    'seguridad':    ['seguridad-cerraduras','seguridad-camaras','seguridad-alarmas','seguridad-guantes','seguridad-epp','seguridad-matafuegos'],
+    'hogar':        ['hogar-electrodomesticos','hogar-muebles','hogar-camaras','hogar-organizadores','productos de limpieza','hogar-tanzas']
+};
+
+// =================================================================
+// RESTAURAR POSICION DEL CATALOGO AL VOLVER DEL DETALLE
+//
+// IMPORTANTE: solo guardamos estado cuando el usuario navega
+// ESPECIFICAMENTE a detalle.html. El pagehide no se usa porque
+// dispara en cualquier navegacion (ej: "Ver catalogo completo")
+// y rompe los filtros al volver.
+// =================================================================
+
+function guardarPosicionCatalogo(prodId) {
+    try {
+        sessionStorage.setItem('_catEstado', JSON.stringify({
+            categoria:     estado.categoria,
+            busqueda:      estado.busqueda,
+            paginaActual:  estado.paginaActual,
+            soloOfertas:   estado.soloOfertas,
+            soloVariantes: estado.soloVariantes,
+            soloNuevos:    estado.soloNuevos,
+        }));
+        if (prodId) sessionStorage.setItem('_catProdId', prodId);
+        sessionStorage.setItem('_fromDetail', '1');
+    } catch(e) {}
+}
+
+function restaurarPosicionCatalogo() {
+    if (!sessionStorage.getItem('_fromDetail')) return;
+    const prodId = sessionStorage.getItem('_catProdId');
+    sessionStorage.removeItem('_catEstado');
+    sessionStorage.removeItem('_catProdId');
+    sessionStorage.removeItem('_fromDetail');
+    if (!prodId) return;
+    // Polling: buscar la tarjeta cada 100ms hasta que aparezca (max 3s)
+    var _intentos = 0;
+    var _timer = setInterval(function() {
+        _intentos++;
+        if (_intentos > 30) { clearInterval(_timer); return; } // max 3s
+        var card = document.querySelector('[data-prod-id="' + prodId + '"]');
+        if (card) {
+            clearInterval(_timer);
+            // Calcular posicion y scrollear la ventana directamente
+            var rect = card.getBoundingClientRect();
+            var scrollTop = window.pageYOffset + rect.top - (window.innerHeight / 2) + (rect.height / 2);
+            window.scrollTo({ top: Math.max(0, scrollTop), behavior: 'instant' });
+        }
+    }, 100);
+}
+
+// Interceptar clicks que navegan a detalle.html (capture phase = antes del onclick)
+document.addEventListener('click', function(e) {
+    if (!document.getElementById('contenedor-productos')) return;
+    // Skip: card action buttons (fav, share, add-to-cart)
+    if (e.target.closest('.card-fav-btn, .card-share-btn, .add-to-cart-btn, .btn-add, .vs-btn')) return;
+    // Buscar el article padre con data-prod-id (forma mas confiable)
+    const art = e.target.closest('[data-prod-id]');
+    if (!art) return;
+    const prodId = art.dataset.prodId;
+    if (!prodId) return;
+    // Solo guardar si el click va a navegar a detalle (no si abre modal o agrega al carrito)
+    const target = e.target.closest('a[href*="detalle.html"]');
+    const isDetailNav = target || 
+        (e.target.closest('[onclick*="detalle.html"]'));
+    // Tambien guardar si el click es en la imagen o nombre del producto (dentro del <a>)
+    const inLink = e.target.closest('a[href]');
+    const linkHref = inLink && inLink.getAttribute('href') || '';
+    if (isDetailNav || linkHref.includes('detalle.html')) {
+        guardarPosicionCatalogo(prodId);
+    }
+}, true);
+
 function aplicarFiltrosGlobales() {
+    restaurarPosicionCatalogo(); // inicia el polling si venimos del detalle
     const resultado = inventario.filter(prod => {
-        const pasaCat    = (estado.categoria === 'all') || (prod.categoria === estado.categoria);
+        let pasaCat;
+        if (estado.categoria === 'all') {
+            pasaCat = true;
+        } else if (CATEGORIAS_PADRE[estado.categoria]) {
+            // Filtrado por categoría padre: incluye todos sus sub-items
+            pasaCat = CATEGORIAS_PADRE[estado.categoria].includes(prod.categoria);
+        } else {
+            pasaCat = (prod.categoria === estado.categoria);
+        }
         const pasaPrecio = prod.precio >= estado.precioMin && prod.precio <= estado.precioMax;
-        const pasaOferta = estado.soloOfertas ? prod.enOferta === true : true;
+        const pasaOferta    = estado.soloOfertas  ? prod.enOferta === true : true;
+        const pasaVariantes = estado.soloVariantes ? prod.tieneVariantes === true : true;
+        const pasaNuevo     = estado.soloNuevos     ? prod.nuevo === true : true;
         const pasaBusqueda = !estado.busqueda || (
             (prod.nombre   || '').toLowerCase().includes(estado.busqueda) ||
             (prod.marca    || '').toLowerCase().includes(estado.busqueda) ||
             (prod.categoria || '').toLowerCase().includes(estado.busqueda) ||
             (prod.id       || '').toLowerCase().includes(estado.busqueda)
         );
-        return pasaCat && pasaPrecio && pasaOferta && pasaBusqueda;
+        return pasaCat && pasaPrecio && pasaOferta && pasaVariantes && pasaNuevo && pasaBusqueda;
     });
     // Mostrar solo UN producto por grupoId en el catálogo (el representante)
     estado.productosFiltrados = deduplicarGrupos(resultado);
@@ -1341,7 +1560,7 @@ async function renderizarGrupo(productoActual) {
     const dim2Activa = productoActual.varDim2;
 
     // Helper: escapa comillas dobles en valores usados dentro de atributos HTML onclick
-    const esc = s => String(s).replace(/"/g, '&quot;');
+    const esc = s => String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
     let html = '<div style="display:flex;flex-direction:column;gap:14px;">';
 
@@ -1459,6 +1678,19 @@ window.seleccionarVariante = function(productoId, varianteId, animarImagen = tru
         // Si no es VIP el precio ya está oculto con candado — no hacer nada
     }
 
+    // Actualizar codigo / SKU
+    const skuElS = document.getElementById('detalle-sku');
+    if (skuElS) {
+        const vCode  = (variante.codigo || variante.id || '').trim();
+        const pCode  = (producto.codigo  || '').trim();
+        const parts  = [variante.varDim1, variante.varDim2].filter(Boolean)
+            .map(d => d.trim().replace(/\s+/g,'-').toUpperCase());
+        const disp = (vCode && vCode !== pCode)
+            ? vCode
+            : (parts.length ? (pCode ? pCode+'-'+parts.join('-') : parts.join('-')) : (vCode||pCode||'S/C'));
+        skuElS.innerHTML = `<span class="material-icons" style="font-size:1rem;margin-right:5px;">qr_code_2</span> CÓD: ${disp}`;
+    }
+
     // Guardar variante activa en el producto (para que el carrito la use)
     producto._varianteActiva = variante;
 };
@@ -1509,8 +1741,7 @@ function renderizarGrid(lista, contenedor) {
 
     lista.forEach(prod => {
         // ¿Es producto padre con variantes embebidas (nuevo sistema)?
-        const esVariantePadre = prod.tieneVariantes && prod.variantes && prod.variantes.length > 0
-                                && prod.variantes.some(v => v.varDim1);
+        const esVariantePadre = prod.tieneVariantes === true && prod.variantes && prod.variantes.length > 0;
 
         const stock         = prod.stock !== undefined ? parseInt(prod.stock) : 100;
         const precioMostrar = prod.precio;
@@ -1519,16 +1750,18 @@ function renderizarGrid(lista, contenedor) {
         const inputId        = `qty-${prod.id}`;
         const hayStock       = stock > 0;
         const esOferta       = prod.enOferta === true;
-        const codigoProducto = prod.codigo || 'S/C';
+        const codigoProducto = (esVariantePadre && prod.variantes[0] && prod.variantes[0].codigo)
+            ? prod.variantes[0].codigo
+            : (prod.codigo || 'S/C');
 
         let badgeHtml = '';
-        if (!hayStock)        badgeHtml = '<span class="card-badge agotado" style="background-color:#2D3748;color:white;">AGOTADO</span>';
-        else if (prod.nuevo)  badgeHtml = '<span class="card-badge nuevo"   style="background-color:#38bdf8;color:#0a192f;">NUEVO</span>';
-        else if (esOferta)    badgeHtml = '<span class="card-badge oferta"  style="background-color:#E53E3E;color:white;">OFERTA</span>';
+        if (!hayStock)        badgeHtml = '<span class="card-badge agotado">AGOTADO</span>';
+        else if (prod.nuevo)  badgeHtml = '<span class="card-badge nuevo">NUEVO</span>';
+        else if (esOferta)    badgeHtml = '<span class="card-badge oferta">OFERTA</span>';
 
         // Badge VARIANTES: nuevo sistema (esVariantePadre) y Sistema B antiguo (grupoId)
         const varBadge = (esVariantePadre || prod.grupoId)
-            ? `<span style="position:absolute;bottom:10px;right:10px;background:rgba(43,108,176,0.92);color:white;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.04em;">⚡ VARIANTES</span>`
+            ? `<span class="card-var-badge">⚡ VARIANTES</span>`
             : '';
 
         let precioHtml = '';
@@ -1540,19 +1773,10 @@ function renderizarGrid(lista, contenedor) {
                 </div>`;
             }
             let precioFinalHtml = '';
-            if (esOferta) {
-                const precioViejo = precioMostrar * 1.22;
-                precioFinalHtml = `<div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;">
-                    <span style="color:var(--primary-dark);font-size:1.3rem;font-weight:900;">$${parseInt(precioMostrar).toLocaleString('es-AR')}</span>
-                    <span style="text-decoration:line-through;color:#A0AEC0;font-size:0.9rem;">$${parseInt(precioViejo).toLocaleString('es-AR')}</span>
-                    <span style="font-size:0.8rem;color:#718096;">c/u</span>
-                </div>`;
-            } else {
-                precioFinalHtml = `<div class="price" style="font-size:1.3rem;color:var(--primary-dark);font-weight:900;display:flex;align-items:baseline;gap:4px;">
-                    $${parseInt(precioMostrar).toLocaleString('es-AR')}
-                    <span style="font-size:0.8rem;color:#718096;font-weight:normal;">c/u</span>
-                </div>`;
-            }
+            precioFinalHtml = `<div class="price" style="font-size:1.3rem;color:var(--primary-dark);font-weight:900;display:flex;align-items:baseline;gap:4px;">
+                $${parseInt(precioMostrar).toLocaleString('es-AR')}
+                <span style="font-size:0.8rem;color:#718096;font-weight:normal;">c/u</span>
+            </div>`;
             precioHtml = cartelCajaHtml + precioFinalHtml;
         } else {
             precioHtml = `<div class="price" style="font-size:1rem;color:#718096;display:flex;align-items:center;gap:5px;">
@@ -1564,7 +1788,7 @@ function renderizarGrid(lista, contenedor) {
         const btnDisabled = hayStock ? "" : "disabled";
         const estiloBoton = hayStock ? "" : "background-color:#ccc;cursor:not-allowed;";
         const btnTexto    = hayStock
-            ? (esVariantePadre ? "VER OPCIONES" : (usuarioEsVIP ? "COTIZAR" : "CONSULTAR"))
+            ? (esVariantePadre ? "VER OPCIONES" : (usuarioEsVIP ? "AGREGAR" : "CONSULTAR"))
             : "SIN STOCK";
         let btnOnclick = '';
         if (hayStock) {
@@ -1582,16 +1806,20 @@ function renderizarGrid(lista, contenedor) {
 
         const card = document.createElement('article');
         card.className = 'product-card';
+        card.dataset.prodId = prod.id; // para scroll restoration
+        card.dataset.nombre = prod.nombre || '';
         card.innerHTML = `
-            <a href="${link}" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;flex-grow:1;">
+            <a href="${link}" class="card-link">
                 <div class="card-image">
-                    <img src="${prod.imagen}" alt="${prod.nombre}" loading="lazy" width="300" height="300">
+                    <img src="${prod.imagen}" alt="${escHtml(prod.nombre)}" loading="lazy" width="300" height="300">
                     ${badgeHtml}
                     ${varBadge}
+                    <button class="card-share-btn" data-share-id="${prod.id}" onclick="event.preventDefault();event.stopPropagation();mostrarSharePopover(this)" title="Compartir producto"><span class="material-icons">share</span></button>
+                    <button class="card-fav-btn ${window._misFavs && window._misFavs.has(prod.id) ? 'is-fav' : ''}" data-fav-id="${prod.id}" onclick="event.preventDefault();event.stopPropagation();toggleFavorito('${prod.id}',this)" title="Guardar en favoritos"><span class="material-icons">${window._misFavs && window._misFavs.has(prod.id) ? 'favorite' : 'favorite_border'}</span></button>
                 </div>
                 <div class="card-info" style="display:flex;flex-direction:column;flex-grow:1;">
-                    <span class="brand">${prod.marca}</span>
-                    <h3 style="margin-bottom:5px;">${prod.nombre}</h3>
+                    <span class="brand">${escHtml(prod.marca)}</span>
+                    <h3 style="margin-bottom:5px;">${escHtml(prod.nombre)}</h3>
                     <div>
                         <span class="product-sku" style="display:inline-flex;align-items:center;background-color:#EDF2F7;color:#4A5568;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-family:monospace;font-weight:bold;border:1px solid #E2E8F0;margin-bottom:10px;">
                             <span class="material-icons" style="font-size:0.85rem;margin-right:3px;">qr_code_2</span> CÓD: ${codigoProducto}
@@ -1626,10 +1854,19 @@ function renderizarGrid(lista, contenedor) {
 
 function modificarCantidadTarjeta(inputId, cambio) {
     const input = document.getElementById(inputId);
-    if (input) {
-        const nuevo = parseInt(input.value) + cambio;
-        if (nuevo >= 1) input.value = nuevo;
+    if (!input) return;
+    const nuevo = parseInt(input.value) + cambio;
+    if (nuevo < 1) return;
+    // inputId = "qty-<prodId>" — validar contra el stock del producto
+    const prodId = inputId.replace(/^qty-/, '');
+    const prod   = inventario.find(p => p.id === prodId);
+    const stockMax = (prod && prod.stock !== undefined && !isNaN(parseInt(prod.stock)))
+        ? parseInt(prod.stock) : Infinity;
+    if (nuevo > stockMax) {
+        mostrarNotificacion(`⚠️ Solo hay ${stockMax} unidades disponibles.`);
+        return;
     }
+    input.value = nuevo;
 }
 
 function agregarDesdeTarjeta(idProducto, inputId) {
@@ -1641,12 +1878,146 @@ function agregarDesdeTarjeta(idProducto, inputId) {
 /* ==========================================================================
    12. DETALLE DEL PRODUCTO
    ========================================================================== */
+// FAVORITOS
+window._misFavs = new Set();
+
+async function cargarSetFavoritos(uid) {
+    try {
+        const snap = await db.collection('usuarios').doc(uid).collection('favoritos').get();
+        window._misFavs = new Set(snap.docs.map(d => d.id));
+        document.querySelectorAll('[data-fav-id]').forEach(btn => {
+            const filled = window._misFavs.has(btn.dataset.favId);
+            btn.querySelector('.material-icons').textContent = filled ? 'favorite' : 'favorite_border';
+            btn.style.color = filled ? '#E53E3E' : '#A0AEC0';
+        });
+    } catch(e) {}
+}
+
+async function toggleFavorito(prodId, btn) {
+    if (!usuarioEsVIP || !auth.currentUser) {
+        mostrarNotificacion('Inicia sesion para guardar favoritos');
+        return;
+    }
+    const uid   = auth.currentUser.uid;
+    const ref   = db.collection('usuarios').doc(uid).collection('favoritos').doc(prodId);
+    const isFav = window._misFavs.has(prodId);
+    const icon  = btn ? btn.querySelector('.material-icons') : null;
+    try {
+        if (isFav) {
+            await ref.delete();
+            window._misFavs.delete(prodId);
+            if (btn) btn.classList.remove('is-fav');
+            if (icon) icon.textContent = 'favorite_border';
+            mostrarNotificacion('Quitado de favoritos');
+        } else {
+            const prod = inventario.find(p => p.id === prodId) || {};
+            await ref.set({ nombre: prod.nombre || '', imagen: prod.imagen || '', fecha: new Date() });
+            window._misFavs.add(prodId);
+            if (btn) btn.classList.add('is-fav');
+            if (icon) icon.textContent = 'favorite';
+            mostrarNotificacion('❤ Guardado');
+        }
+        // Sync todos los botones con el mismo prodId
+        document.querySelectorAll(`[data-fav-id="${prodId}"]`).forEach(b => {
+            b.classList.toggle('is-fav', window._misFavs.has(prodId));
+            const ic = b.querySelector('.material-icons');
+            if (ic) ic.textContent = window._misFavs.has(prodId) ? 'favorite' : 'favorite_border';
+        });
+    } catch(e) { mostrarNotificacion('Error al guardar'); }
+}
+
+function mostrarSharePopover(btn) {
+    var prodId = btn.dataset.shareId;
+    if (!prodId) return;
+    var prod   = inventario.find(function(p){ return p.id === prodId; }) || {};
+    var nombre = prod.nombre || 'Producto';
+    var url    = 'https://enzodistribuciones.com/detalle.html?id=' + prodId;
+
+    var old = document.getElementById('share-popover');
+    if (old) { old.remove(); return; }
+
+    var waMsg = encodeURIComponent(
+        'Mira este producto de Enzo Distribuciones!\n\n' +
+        nombre + '\n\nConsulta precio y stock mayorista:\n' + url
+    );
+    var fbUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
+
+    var pop = document.createElement('div');
+    pop.id = 'share-popover';
+    pop.innerHTML =
+        '<a class="sp-item" href="https://wa.me/?text=' + waMsg + '" target="_blank" rel="noopener">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
+            'WhatsApp' +
+        '</a>' +
+        '<a class="sp-item" href="' + fbUrl + '" target="_blank" rel="noopener">' +
+            '<span class="material-icons" style="font-size:16px;color:#1877F2;flex-shrink:0">facebook</span>Facebook' +
+        '</a>' +
+        '<button class="sp-item sp-copy" id="sp-copy-btn">' +
+            '<span class="material-icons" style="font-size:16px;flex-shrink:0">link</span>Copiar link' +
+        '</button>';
+
+    document.body.appendChild(pop);
+
+    document.getElementById('sp-copy-btn').addEventListener('click', function() {
+        navigator.clipboard.writeText(url).then(function() {
+            var t = document.getElementById('sp-copy-btn');
+            if (t) t.innerHTML = '<span class="material-icons" style="font-size:16px;color:#38A169;flex-shrink:0">check</span>Copiado!';
+            setTimeout(function() {
+                var p = document.getElementById('share-popover');
+                if (p) p.remove();
+            }, 1200);
+        });
+    });
+
+    var rect = btn.getBoundingClientRect();
+    pop.style.top  = (rect.bottom + window.scrollY + 6) + 'px';
+    pop.style.left = Math.min(rect.left + window.scrollX, window.innerWidth - 190) + 'px';
+
+    setTimeout(function() {
+        document.addEventListener('click', function closePop(e) {
+            if (!pop.contains(e.target) && e.target !== btn) {
+                pop.remove();
+                document.removeEventListener('click', closePop);
+            }
+        });
+    }, 50);
+}
+
+// =================================================================
+// COMPARTIR PRODUCTO
+// =================================================================
+function compartirProducto(via, prodId) {
+    const prod = prodId
+        ? (inventario.find(p => p.id === prodId) || {})
+        : (window._detalleProductoActual || {});
+    const nombre = prod.nombre || 'Producto';
+    const url    = prodId
+        ? `https://enzodistribuciones.com/detalle.html?id=${prodId}`
+        : window.location.href;
+    const msg    = `\u00a1Mir\u00e1 este producto de Enzo Distribuciones!\n\n*${nombre}*\n\nConsult\u00e1 precio y stock mayorista:\n${url}`;
+
+    if (via === 'whatsapp') {
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    } else if (via === 'facebook') {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+    } else if (via === 'copy') {
+        navigator.clipboard.writeText(url).then(() => {
+            const btn = document.getElementById('copy-link-txt');
+            if (btn) { btn.textContent = '\u2713 Copiado'; setTimeout(() => btn.textContent = 'Copiar link', 2000); }
+            mostrarNotificacion('\u00a1Link copiado al portapapeles!');
+        });
+    } else if (via === 'native' && navigator.share) {
+        navigator.share({ title: nombre, text: `Mir\u00e1 este producto: ${nombre}`, url });
+    }
+}
+
 function cargarDetalleProducto() {
     const params   = new URLSearchParams(window.location.search);
     const idParam  = params.get('id');
     const producto = inventario.find(p => p.id == idParam);
 
     if (!producto) return;
+    window._detalleProductoActual = producto; // fallback para vsDetD1/vsDetD2
 
     document.getElementById('detail-name').textContent  = producto.nombre;
     document.getElementById('detail-image').src         = producto.imagen;
@@ -1668,7 +2039,9 @@ function cargarDetalleProducto() {
         imgContainer.insertAdjacentHTML('beforeend', '<span class="card-badge oferta" style="background-color:#E53E3E;color:white;position:absolute;top:15px;left:15px;padding:5px 10px;border-radius:4px;font-weight:bold;font-size:0.8rem;z-index:10;">OFERTA</span>');
 
     // SKU
-    const codigoDetalle = producto.codigo || "S/C";
+    const codigoDetalle = (producto.tieneVariantes && producto.variantes && producto.variantes[0] && producto.variantes[0].codigo)
+        ? producto.variantes[0].codigo
+        : (producto.codigo || "S/C");
     let skuElem = document.getElementById('detalle-sku');
     if (!skuElem) {
         const titleElem = document.getElementById('detail-name');
@@ -1695,15 +2068,7 @@ function cargarDetalleProducto() {
 
     if (usuarioEsVIP) {
         let precioMostrar = '';
-        if (producto.enOferta) {
-            const precioViejo = producto.precio * 1.22;
-            precioMostrar = `<div style="display:flex;align-items:baseline;gap:16px;">
-                <span style="text-decoration:line-through;color:#A0AEC0;font-size:1.8rem;">$${parseInt(precioViejo).toLocaleString('es-AR')}</span>
-                <span style="color:var(--primary-dark);font-size:2.2rem;font-weight:900;">$${parseInt(producto.precio).toLocaleString('es-AR')}</span>
-            </div>`;
-        } else {
             precioMostrar = `<div style="color:var(--primary-dark);font-size:2.2rem;font-weight:900;">$${parseInt(producto.precio).toLocaleString('es-AR')}</div>`;
-        }
         precioElem.innerHTML   = precioMostrar;
         precioElem.style.color = "";
         precioElem.style.fontSize = "";
@@ -1841,14 +2206,22 @@ function agregarAlCarrito(id, cantidad = 1) {
     const itemEnCarrito = carrito.find(p => p.id == id);
     if (!producto) { console.error("Producto no encontrado:", id); return; }
 
+    // No permitir superar el stock contando lo que ya hay en el carrito
+    const stockMax = (producto.stock !== undefined && !isNaN(parseInt(producto.stock)))
+        ? parseInt(producto.stock) : Infinity;
+    const yaEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
+    if (yaEnCarrito + cantidad > stockMax) {
+        mostrarNotificacion(`⚠️ Stock máximo: ${stockMax} u.${yaEnCarrito ? ` (ya tenés ${yaEnCarrito} en el carrito)` : ''}`);
+        return;
+    }
+
     if (itemEnCarrito) itemEnCarrito.cantidad += cantidad;
     else carrito.push({ ...producto, cantidad });
 
     guardarCarrito();
     actualizarBadgeCarrito();
     renderizarCarrito();
-    abrirCarrito();
-    mostrarNotificacion(`¡${producto.nombre} agregado!`);
+    mostrarNotificacion(`¡${producto.nombre} agregado al carrito! 🛒`);
 }
 
 function agregarObjetoAlCarrito(productoPersonalizado, cantidad = 1) {
@@ -1858,8 +2231,7 @@ function agregarObjetoAlCarrito(productoPersonalizado, cantidad = 1) {
     guardarCarrito();
     actualizarBadgeCarrito();
     renderizarCarrito();
-    abrirCarrito();
-    mostrarNotificacion(`¡Caja agregada!`);
+    mostrarNotificacion(`¡${productoPersonalizado.nombre || 'Producto'} agregado al carrito! 🛒`);
 }
 
 function eliminarDelCarrito(id) {
@@ -1874,14 +2246,26 @@ function cambiarCantidadCarrito(id, operacion) {
     if (!item) return;
 
     if (operacion === 'sumar') {
-        const idReal       = String(id).replace('_CAJA', '');
-        const prodOriginal = inventario.find(p => p.id == idReal);
-        if (prodOriginal) {
-            let unidades = item.cantidad + 1;
-            if (String(id).includes('_CAJA') && item.unidadesPorCaja) unidades = (item.cantidad + 1) * parseInt(item.unidadesPorCaja);
-            if (unidades > (parseInt(prodOriginal.stock) || 0)) {
-                alert(`⚠️ Stock insuficiente. Solo quedan ${prodOriginal.stock} unidades.`);
+        if (String(id).includes('_VAR_')) {
+            // Variante embebida: validar contra el stock de esa variante
+            const padreId = String(id).split('_VAR_')[0];
+            const varCode = String(id).split('_VAR_').slice(1).join('_VAR_');
+            const padre   = inventario.find(p => p.id === padreId);
+            const v       = padre && (padre.variantes || []).find(v => (v.codigo || v.id) === varCode);
+            if (v && item.cantidad + 1 > (parseInt(v.stock) || 0)) {
+                alert(`⚠️ Stock insuficiente. Solo quedan ${v.stock || 0} unidades.`);
                 return;
+            }
+        } else {
+            const idReal       = String(id).replace('_CAJA', '');
+            const prodOriginal = inventario.find(p => p.id == idReal);
+            if (prodOriginal) {
+                let unidades = item.cantidad + 1;
+                if (String(id).includes('_CAJA') && item.unidadesPorCaja) unidades = (item.cantidad + 1) * parseInt(item.unidadesPorCaja);
+                if (unidades > (parseInt(prodOriginal.stock) || 0)) {
+                    alert(`⚠️ Stock insuficiente. Solo quedan ${prodOriginal.stock} unidades.`);
+                    return;
+                }
             }
         }
         item.cantidad++;
@@ -1903,6 +2287,14 @@ function vaciarCarrito() {
 function guardarCarrito() { localStorage.setItem('carritoEnzo', JSON.stringify(carrito)); }
 
 function actualizarBadgeCarrito() {
+    // FAB mobile
+    const fab = document.getElementById('cart-fab');
+    const fabBadge = document.getElementById('fab-badge');
+    const _fabTotal = carrito.reduce((s, i) => s + i.cantidad, 0);
+    if (fab) fab.classList.toggle('has-items', _fabTotal > 0);
+    if (fabBadge) { fabBadge.textContent = _fabTotal; fabBadge.style.display = _fabTotal > 0 ? "flex" : "none"; }
+    // (badge original sigue abajo)
+
     const total = carrito.reduce((acc, item) => acc + item.cantidad, 0);
     document.querySelectorAll('.badge').forEach(b => b.textContent = total);
 }
@@ -1938,9 +2330,9 @@ function renderizarCarrito() {
 
             contenedor.innerHTML += `
                 <div class="cart-item">
-                    <img src="${item.imagen}" alt="${item.nombre}">
+                    <img src="${item.imagen}" alt="${escHtml(item.nombre)}">
                     <div class="cart-item-info">
-                        <div class="cart-item-title" style="font-size:0.9rem;margin-bottom:2px;">${item.nombre}</div>
+                        <div class="cart-item-title" style="font-size:0.9rem;margin-bottom:2px;">${escHtml(item.nombre)}</div>
                         ${precioUnitHtml}
                         <div class="cart-item-controls">
                             <div class="cart-qty-box">
@@ -1997,6 +2389,10 @@ function renderizarCarrito() {
 function configurarEventosCarrito() {
     document.querySelectorAll('.cart-icon').forEach(icon => {
         icon.addEventListener('click', () => { renderizarCarrito(); abrirCarrito(); });
+        // A11y: el ícono es un div con role="button" — abrir también con teclado
+        icon.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); renderizarCarrito(); abrirCarrito(); }
+        });
     });
     const closeBtn = document.getElementById('close-cart-btn');
     const clearBtn = document.getElementById('btn-clear-cart');
@@ -2006,8 +2402,20 @@ function configurarEventosCarrito() {
     if (clearBtn) clearBtn.addEventListener('click', vaciarCarrito);
 }
 
-function abrirCarrito()  { document.getElementById('cart-drawer').classList.add('active'); document.getElementById('cart-overlay').classList.add('active'); }
-function cerrarCarrito() { document.getElementById('cart-drawer').classList.remove('active'); document.getElementById('cart-overlay').classList.remove('active'); }
+function abrirCarrito()  {
+    window._scrollYCarrito = window.scrollY || window.pageYOffset;
+    document.getElementById('cart-drawer').classList.add('active');
+    document.getElementById('cart-overlay').classList.add('active');
+    // Pre-llenar el formulario con datos del perfil VIP
+    preLlenarCheckout();
+}
+function cerrarCarrito() {
+    document.getElementById('cart-drawer').classList.remove('active');
+    document.getElementById('cart-overlay').classList.remove('active');
+    if (window._scrollYCarrito !== undefined) {
+        requestAnimationFrame(() => window.scrollTo({ top: window._scrollYCarrito, behavior: 'instant' }));
+    }
+}
 
 function mostrarNotificacion(msj) {
     const toast = document.getElementById('toast');
@@ -2084,7 +2492,7 @@ if (searchInput) {
             const nombre    = (prod.nombre   || '').toLowerCase();
             const marca     = (prod.marca    || '').toLowerCase();
             let categoria   = (prod.categoria || '').toLowerCase();
-            if (categoria === 'sin categoria') categoria = 'otros varios';
+            if (categoria === 'sin-categoria' || categoria === 'sin categoria') categoria = 'otros varios';
             const codigo = (prod.id || '').toLowerCase();
             return nombre.includes(q) || marca.includes(q) || categoria.includes(q) || codigo.includes(q);
         });
@@ -2109,8 +2517,8 @@ function mostrarResultadosBusqueda(lista) {
             item.classList.add('search-item');
             item.href = `detalle.html?id=${prod.id}`;
             item.innerHTML = `
-                <div class="search-img-box"><img src="${prod.imagen}" alt="${prod.nombre}"></div>
-                <div class="search-info"><h4>${prod.nombre}</h4><span class="search-brand">${prod.marca}</span></div>
+                <div class="search-img-box"><img src="${prod.imagen}" alt="${escHtml(prod.nombre)}"></div>
+                <div class="search-info"><h4>${escHtml(prod.nombre)}</h4><span class="search-brand">${escHtml(prod.marca)}</span></div>
                 <div class="search-action">Ver <span class="material-icons" style="font-size:1rem;">chevron_right</span></div>`;
             searchResults.appendChild(item);
         });
@@ -2201,6 +2609,21 @@ function cerrarModals() {
 /* ==========================================================================
    18. CHECKOUT EN 3 PASOS
    ========================================================================== */
+// Helper: actualizar data-step del cart-drawer (para CSS de layout)
+function _setCartStep(n) {
+    const d = document.getElementById('cart-drawer');
+    if (d) d.setAttribute('data-step', String(n));
+    pasoCheckoutActual = n;
+    // Columna izquierda: visible solo en paso 1
+    const colItems = document.querySelector('.cart-items-col');
+    if (colItems) colItems.style.display = (n === 1) ? '' : 'none';
+    // Columna derecha: ajustar ancho en paso 1 vs pasos de formulario
+    const colSummary = document.querySelector('.cart-summary-col');
+    if (colSummary) colSummary.style.width = (n === 1) ? '' : '100%';
+    if (colSummary) colSummary.style.borderLeft = (n === 1) ? '' : 'none';
+}
+
+
 let pasoCheckoutActual = 1;
 
 /* ── Actualiza el botón del carrito según el tipo de usuario ── */
@@ -2240,7 +2663,7 @@ function configurarCheckout() {
                 btnNext.style.background = "#25D366";
                 btnPrev.style.display = 'inline-block';
                 if (btnClear) btnClear.style.display = 'none';
-                pasoCheckoutActual = 2;
+                _setCartStep(2);
             } else if (pasoCheckoutActual === 2) {
                 const nom = document.getElementById('pres-nombre')?.value.trim();
                 const tel = document.getElementById('pres-telefono')?.value.trim();
@@ -2263,18 +2686,20 @@ function configurarCheckout() {
             btnNext.textContent = "IR A LOGÍSTICA";
             btnPrev.style.display = 'inline-block';
             if (btnClear) btnClear.style.display = 'none';
-            pasoCheckoutActual = 2;
+            _setCartStep(2);
         } else if (pasoCheckoutActual === 2) {
             const nom = document.getElementById('chk-nombre')?.value.trim();
             const tel = document.getElementById('chk-telefono')?.value.trim();
             const dir = document.getElementById('chk-direccion')?.value.trim();
-            if (!nom || !tel || !dir) { alert("Por favor, completá tu Nombre, Teléfono y Dirección."); return; }
+            const loc = document.getElementById('chk-localidad')?.value.trim();
+            const cpc = document.getElementById('chk-cp')?.value.trim();
+            if (!nom || !tel || !dir || !loc || !cpc) { alert("Por favor, completá tu Nombre, Teléfono, Dirección, Localidad y Código Postal."); return; }
             document.getElementById('checkout-step-2').style.display = 'none';
             document.getElementById('checkout-step-3').style.display = 'block';
             title.innerHTML = 'Paso 3 de 3: Finalizar';
             btnNext.textContent = "CONFIRMAR PEDIDO";
             btnNext.style.background = "#38A169";
-            pasoCheckoutActual = 3;
+            _setCartStep(3);
         } else if (pasoCheckoutActual === 3) {
             const chkTerminos = document.getElementById('chk-terminos');
             if (!chkTerminos) { alert("⚠️ Error de sincronización. Actualizá la página (F5)."); return; }
@@ -2291,13 +2716,59 @@ function configurarCheckout() {
             title.innerHTML = 'Paso 2 de 3: Datos';
             btnNext.textContent = "IR A LOGÍSTICA";
             btnNext.style.background = "var(--primary-blue)";
-            pasoCheckoutActual = 2;
+            _setCartStep(2);
         }
     };
 }
 
+// =================================================================
+// PRE-LLENADO DEL CHECKOUT CON DATOS DEL PERFIL VIP
+// =================================================================
+function preLlenarCheckout() {
+    const perfil = window._perfilUsuario;
+    if (!perfil || !usuarioEsVIP) return;
+
+    const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val) el.value = val;
+    };
+
+    // Nombre del negocio > nombre personal > email
+    set('chk-nombre',    perfil.negocio    || perfil.nombre || '');
+    set('chk-telefono',  perfil.telefono   || '');
+    set('chk-direccion', perfil.direccion  || '');
+    set('chk-localidad', perfil.localidad  || perfil.ciudad || '');
+    set('chk-cp',        perfil.cp         || '');
+
+    // Indicador visual debajo del formulario
+    const indicador = document.getElementById('chk-prefill-badge');
+    if (indicador) indicador.style.display = 'flex';
+}
+
+// Actualizar perfil en Firestore con los datos que el usuario ingresó
+async function actualizarPerfilDesdeCheckout(datosCliente) {
+    const uid = window._perfilUsuarioId;
+    if (!uid || !usuarioEsVIP) return;
+    try {
+        const cambios = {};
+        const perfil  = window._perfilUsuario || {};
+        if (datosCliente.nombre    && datosCliente.nombre    !== (perfil.negocio || perfil.nombre)) cambios.negocio   = datosCliente.nombre;
+        if (datosCliente.telefono  && datosCliente.telefono  !== perfil.telefono)  cambios.telefono  = datosCliente.telefono;
+        if (datosCliente.direccion && datosCliente.direccion !== perfil.direccion) cambios.direccion = datosCliente.direccion;
+        if (datosCliente.localidad && datosCliente.localidad !== perfil.localidad) cambios.localidad = datosCliente.localidad;
+        if (datosCliente.cp        && datosCliente.cp        !== perfil.cp)        cambios.cp        = datosCliente.cp;
+        if (Object.keys(cambios).length > 0) {
+            await db.collection('usuarios').doc(uid).update(cambios);
+            // Actualizar caché local
+            window._perfilUsuario = { ...perfil, ...cambios };
+        }
+    } catch(e) {
+        console.warn('No se pudo actualizar el perfil:', e);
+    }
+}
+
 function reiniciarCheckout() {
-    pasoCheckoutActual = 1;
+    _setCartStep(1);
     const title = document.getElementById('cart-title-step');
     const count = document.getElementById('cart-count-header');
     const step1 = document.getElementById('checkout-step-1');
@@ -2342,7 +2813,15 @@ async function procesarPresupuesto(datos) {
                 telefono: datos.telefono,
                 negocio:  datos.negocio
             },
-            items: carrito.map(i => ({ id: i.id, nombre: i.nombre, marca: i.marca || '', cantidad: i.cantidad, imagen: i.imagen || '' })),
+            items: carrito.map(i => ({
+                id:       i.id,
+                codigo:   i.codigo   || '',
+                nombre:   i.nombre   || '',
+                marca:    i.marca    || '',
+                cantidad: i.cantidad || 1,
+                varDim1:  i.varDim1  || null,
+                varDim2:  i.varDim2  || null,
+            })),
             total: 0,  // Sin precio — es un presupuesto
             emailUsuario:  "visitante",
             nombreUsuario: datos.nombre
@@ -2403,11 +2882,16 @@ async function procesarPedidoB2B() {
     btn.disabled    = true;
 
     try {
-        // Verificar stock real en Firebase
-        // Verificar stock real en Firebase (con soporte para variantes embebidas)
+// ═══════════════════════════════════════════════════════════════
+        // VERIFICAR STOCK + CAPTURAR PRECIOS REALES DESDE FIRESTORE
+        // (El precio del carrito no se usa — el total se arma con datos
+        //  leídos directamente de la base de datos para evitar manipulación)
+        // ═══════════════════════════════════════════════════════════════
+        const preciosVerificados = {}; // { itemId: precioReal }
+
         for (let item of carrito) {
             if (item.id.includes('_VAR_')) {
-                // Variante embebida: validar stock en el array del padre
+                // ── Variante embebida ──
                 const padreId  = item.id.split('_VAR_')[0];
                 const varCode  = item.id.split('_VAR_').slice(1).join('_VAR_');
                 const docPadre = await db.collection("productos").doc(padreId).get();
@@ -2424,23 +2908,42 @@ async function procesarPedidoB2B() {
                     alert(`⚠️ Solo quedan ${v.stock || 0} unidades de "${item.nombre}".`);
                     btn.textContent = textoOriginal; btn.disabled = false; return;
                 }
+                // Capturar precio real de la variante
+                preciosVerificados[item.id] = parseFloat(v.precio) || 0;
+
             } else {
-                // Producto regular o CAJA: validación original
+                // ── Producto regular o CAJA ──
                 const idReal   = String(item.id).replace('_CAJA', '');
                 const docRef   = await db.collection("productos").doc(idReal).get();
-                if (!docRef.exists) { alert(`⚠️ "${item.nombre}" ya no está disponible.`); btn.textContent = textoOriginal; btn.disabled = false; return; }
+                if (!docRef.exists) {
+                    alert(`⚠️ "${item.nombre}" ya no está disponible.`);
+                    btn.textContent = textoOriginal; btn.disabled = false; return;
+                }
                 const prodReal = docRef.data();
                 let cantLlevar = item.cantidad;
-                if (String(item.id).includes('_CAJA') && item.unidadesPorCaja) cantLlevar = item.cantidad * parseInt(item.unidadesPorCaja);
+                if (String(item.id).includes('_CAJA') && item.unidadesPorCaja)
+                    cantLlevar = item.cantidad * parseInt(item.unidadesPorCaja);
                 if ((parseInt(prodReal.stock) || 0) < cantLlevar) {
                     alert(`⚠️ Solo quedan ${prodReal.stock || 0} unidades de "${item.nombre}".`);
                     btn.textContent = textoOriginal; btn.disabled = false; return;
                 }
+                // Capturar precio real: precioCaja si es caja, precio si es suelto
+                if (String(item.id).includes('_CAJA')) {
+                    preciosVerificados[item.id] = parseFloat(prodReal.precioCaja) || 0;
+                } else {
+                    preciosVerificados[item.id] = parseFloat(prodReal.precio) || 0;
+                }
             }
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        // TOTAL CALCULADO CON PRECIOS DE FIRESTORE (no del cliente)
+        // ═══════════════════════════════════════════════════════════════
+        const totalOrden = carrito.reduce((acc, item) => {
+            const precioReal = preciosVerificados[item.id] || 0;
+            return acc + (precioReal * item.cantidad);
+        }, 0);
 
-        const totalOrden  = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
         const datosCliente = {
             nombre:       document.getElementById('chk-nombre').value.trim(),
             telefono:     document.getElementById('chk-telefono').value.trim(),
@@ -2456,7 +2959,18 @@ async function procesarPedidoB2B() {
             fecha:         new Date(),
             fechaString:   new Date().toLocaleString(),
             estado:        "pendiente",
-            items:         carrito,
+            items: carrito.map(i => ({
+                id:         i.id,
+                idPadre:    i.idPadre    || null,
+                codigo:     i.codigo     || '',
+                nombre:     i.nombre     || '',
+                marca:      i.marca      || '',
+                precio:     preciosVerificados[i.id] || 0,   // ← precio REAL, no del cliente
+                cantidad:   i.cantidad   || 1,
+                esVariante: i.esVariante || false,
+                varDim1:    i.varDim1    || null,
+                varDim2:    i.varDim2    || null,
+            })),
             total:         totalOrden,
             cliente:       datosCliente.nombre,
             datosLogistica: datosCliente,
@@ -2465,43 +2979,104 @@ async function procesarPedidoB2B() {
             nombreUsuario: auth.currentUser ? auth.currentUser.displayName : datosCliente.nombre
         };
 
-        const docRef  = await db.collection("pedidos").add(nuevoPedido);
-        const idPedido = docRef.id.slice(0, 6).toUpperCase();
+// ═══════════════════════════════════════════════════════════════
+        // DESCONTAR STOCK CON TRANSACCIONES ATÓMICAS
+        // Si dos pedidos simultáneos compiten por el mismo producto,
+        // la transacción re-valida el stock real y rechaza si no alcanza.
+        // El pedido se crea DESPUÉS — si el stock falla, no queda basura.
+        // ═══════════════════════════════════════════════════════════════
 
-        // Descontar stock en batch
-        // Descontar stock — ítems normales con batch, variantes con transacción
-        const batchStock  = db.batch();
         const itemsVar    = carrito.filter(i => i.id.includes('_VAR_'));
         const itemsNormal = carrito.filter(i => !i.id.includes('_VAR_'));
 
+        // 1) Agrupar ítems normales por producto real (sueltos + cajas del mismo prod)
+        const stockPorProducto = {};
         itemsNormal.forEach(item => {
             const idReal = String(item.id).replace('_CAJA', '');
-            const ref    = db.collection("productos").doc(idReal);
             let cantidad = item.cantidad;
-            if (String(item.id).includes('_CAJA') && item.unidadesPorCaja) cantidad = item.cantidad * parseInt(item.unidadesPorCaja);
-            batchStock.update(ref, { stock: firebase.firestore.FieldValue.increment(-cantidad) });
+            if (String(item.id).includes('_CAJA') && item.unidadesPorCaja)
+                cantidad = item.cantidad * parseInt(item.unidadesPorCaja);
+            stockPorProducto[idReal] = (stockPorProducto[idReal] || 0) + cantidad;
         });
-        await batchStock.commit();
 
-        // Variantes: transacción individual actualiza el array y el stock total del padre
-        for (const item of itemsVar) {
-            const padreId = item.id.split('_VAR_')[0];
-            const varCode = item.id.split('_VAR_').slice(1).join('_VAR_');
-            await db.runTransaction(async (t) => {
-                const ref = db.collection('productos').doc(padreId);
-                const doc = await t.get(ref);
-                if (!doc.exists) return;
-                const variantes = [...(doc.data().variantes || [])];
-                const idx = variantes.findIndex(v => (v.codigo || v.id) === varCode);
-                if (idx !== -1) {
-                    variantes[idx] = { ...variantes[idx], stock: Math.max(0, (variantes[idx].stock || 0) - item.cantidad) };
-                    t.update(ref, { variantes, stock: firebase.firestore.FieldValue.increment(-item.cantidad) });
-                }
-            });
+        // Registro de descuentos ya aplicados — si algo falla a mitad de camino,
+        // se devuelven para no dejar stock fantasma.
+        const descuentosNormales  = []; // [idReal, cantidad]
+        const descuentosVariantes = []; // items _VAR_ ya descontados
+
+        async function revertirDescuentos() {
+            for (const [idReal, cant] of descuentosNormales) {
+                try {
+                    await db.collection('productos').doc(idReal)
+                        .update({ stock: firebase.firestore.FieldValue.increment(cant) });
+                } catch (e) { console.error('No se pudo revertir stock de', idReal, e); }
+            }
+            for (const item of descuentosVariantes) {
+                const padreId = item.id.split('_VAR_')[0];
+                const varCode = item.id.split('_VAR_').slice(1).join('_VAR_');
+                try {
+                    await db.runTransaction(async (t) => {
+                        const ref = db.collection('productos').doc(padreId);
+                        const doc = await t.get(ref);
+                        if (!doc.exists) return;
+                        const variantes = [...(doc.data().variantes || [])];
+                        const idx = variantes.findIndex(v => (v.codigo || v.id) === varCode);
+                        if (idx === -1) return;
+                        variantes[idx] = { ...variantes[idx], stock: (parseInt(variantes[idx].stock) || 0) + item.cantidad };
+                        t.update(ref, { variantes, stock: firebase.firestore.FieldValue.increment(item.cantidad) });
+                    });
+                } catch (e) { console.error('No se pudo revertir stock de variante', item.id, e); }
+            }
         }
 
+        let docRef;
+        try {
+            // 2) Descontar normales — transacción por producto
+            for (const [idReal, cantTotal] of Object.entries(stockPorProducto)) {
+                await db.runTransaction(async (t) => {
+                    const ref = db.collection("productos").doc(idReal);
+                    const doc = await t.get(ref);
+                    if (!doc.exists) throw new Error(`El producto ya no existe.`);
+                    const stockActual = parseInt(doc.data().stock) || 0;
+                    if (stockActual < cantTotal) {
+                        throw new Error(`Stock insuficiente para "${doc.data().nombre || idReal}": quedan ${stockActual} unidades, se necesitan ${cantTotal}.`);
+                    }
+                    t.update(ref, { stock: firebase.firestore.FieldValue.increment(-cantTotal) });
+                });
+                descuentosNormales.push([idReal, cantTotal]);
+            }
 
-        // Invalidar caché para que el inventario se refresque
+            // 3) Descontar variantes — transacción que actualiza array + stock total
+            for (const item of itemsVar) {
+                const padreId = item.id.split('_VAR_')[0];
+                const varCode = item.id.split('_VAR_').slice(1).join('_VAR_');
+                await db.runTransaction(async (t) => {
+                    const ref = db.collection('productos').doc(padreId);
+                    const doc = await t.get(ref);
+                    if (!doc.exists) throw new Error(`El producto padre ya no existe.`);
+                    const variantes = [...(doc.data().variantes || [])];
+                    const idx = variantes.findIndex(v => (v.codigo || v.id) === varCode);
+                    if (idx === -1) throw new Error(`La variante ya no existe.`);
+                    const stockVar = parseInt(variantes[idx].stock) || 0;
+                    if (stockVar < item.cantidad) {
+                        throw new Error(`Stock insuficiente para "${item.nombre}": quedan ${stockVar}, se necesitan ${item.cantidad}.`);
+                    }
+                    variantes[idx] = { ...variantes[idx], stock: stockVar - item.cantidad };
+                    t.update(ref, { variantes, stock: firebase.firestore.FieldValue.increment(-item.cantidad) });
+                });
+                descuentosVariantes.push(item);
+            }
+
+            // 4) Stock OK → recién ahora crear el pedido
+            docRef = await db.collection("pedidos").add(nuevoPedido);
+        } catch (errorStock) {
+            await revertirDescuentos();
+            throw errorStock;
+        }
+        actualizarPerfilDesdeCheckout(datosCliente); // sync perfil silencioso
+        const idPedido = docRef.id.slice(0, 6).toUpperCase();
+
+        // 5) Invalidar caché
         invalidarCacheInventario();
 
         // Armar mensaje WhatsApp
@@ -2521,7 +3096,9 @@ async function procesarPedidoB2B() {
 
     } catch (error) {
         console.error("Error al enviar pedido:", error);
-        alert("Hubo un error al conectar. Intentá de nuevo.");
+        alert(error && error.message && !error.code
+            ? `⚠️ ${error.message}`
+            : "Hubo un error al conectar. Intentá de nuevo.");
     } finally {
         btn.textContent = textoOriginal;
         btn.disabled    = false;
@@ -2616,4 +3193,46 @@ if (formFeedback) {
             btn.textContent = "ENVIAR MENSAJE"; btn.disabled = false;
         }
     });
+}
+
+/* ==========================================================================
+   23. HEADER GLASS AL SCROLLEAR (Fase 3 — microinteracciones)
+   Agrega/quita la clase .scrolled al header según la posición del scroll.
+   El estilo glass vive en styles.css (.main-header.scrolled). Listener
+   pasivo + rAF para no impactar el rendimiento del scroll.
+   ========================================================================== */
+function configurarHeaderScroll() {
+    const header = document.querySelector('.main-header');
+    if (!header) return;
+    let ticking = false;
+    const aplicar = () => {
+        header.classList.toggle('scrolled', window.scrollY > 20);
+        ticking = false;
+    };
+    window.addEventListener('scroll', () => {
+        if (!ticking) { window.requestAnimationFrame(aplicar); ticking = true; }
+    }, { passive: true });
+    aplicar(); // estado inicial (por si la página carga ya scrolleada)
+}
+
+/* ==========================================================================
+   24. BARRA DEL HERO: transparente sobre el hero → sólida al pasar el hero
+   (solo en la home con .site-nav + .hero-banner a pantalla completa)
+   ========================================================================== */
+function configurarNavHero() {
+    const nav  = document.querySelector('.site-nav');
+    const hero = document.querySelector('.hero-banner');
+    if (!nav || !hero) return;
+    let ticking = false;
+    const aplicar = () => {
+        // Se vuelve sólida recién cuando se terminó de scrollear TODO el hero
+        const disparo = Math.max(0, hero.offsetHeight - nav.offsetHeight);
+        nav.classList.toggle('solid', window.scrollY > disparo);
+        ticking = false;
+    };
+    window.addEventListener('scroll', () => {
+        if (!ticking) { window.requestAnimationFrame(aplicar); ticking = true; }
+    }, { passive: true });
+    window.addEventListener('resize', aplicar, { passive: true });
+    aplicar();
 }

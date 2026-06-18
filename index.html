@@ -8,57 +8,100 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Distribuidora Enzo | Distribuidor Mayorista en Oberá, Misiones</title>
+    <title>Enzo Distribuciones | Distribuidor Mayorista en Oberá, Misiones</title>
     <meta name="description" content="Distribuidor mayorista de ferretería, electricidad, plomería y herramientas en Oberá, Misiones. Venta por mayor, envíos a toda la provincia y precios para comercios.">
     <meta name="keywords" content="ferretería, oberá, misiones, distribuidora mayorista, herramientas, electricidad, materiales de construcción, proveedor ferretero">
-    <meta name="author" content="Distribuidora Enzo">
+    <meta name="author" content="Enzo Distribuciones">
 
     <!-- ═══ META TAGS OG (WhatsApp, Facebook, LinkedIn) ═══ -->
     <meta property="og:type"         content="website">
     <meta property="og:url"          content="https://enzodistribuciones.com/">
-    <meta property="og:title"        content="Distribuidora Enzo | Mayorista Ferretero en Misiones">
+    <meta property="og:title"        content="Enzo Distribuciones | Mayorista Ferretero en Misiones">
     <meta property="og:description"  content="Stock permanente en herramientas, electricidad, plomería y más. Precios mayoristas para ferreterías y constructoras de Misiones y NEA.">
     <meta property="og:image"        content="https://enzodistribuciones.com/og-image.jpg">
     <meta property="og:image:width"  content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:locale"       content="es_AR">
-    <meta property="og:site_name"    content="Distribuidora Enzo">
+    <meta property="og:site_name"    content="Enzo Distribuciones">
     <meta name="twitter:card"        content="summary_large_image">
-    <meta name="twitter:title"       content="Distribuidora Enzo | Mayorista Ferretero en Misiones">
+    <meta name="twitter:title"       content="Enzo Distribuciones | Mayorista Ferretero en Misiones">
     <meta name="twitter:description" content="Stock permanente en herramientas, electricidad, plomería y más.">
     <meta name="twitter:image"       content="https://enzodistribuciones.com/og-image.jpg">
     <link rel="canonical"            href="https://enzodistribuciones.com/">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=10">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="./logo-empresa.png">
+
+    <!-- ═══ JSON-LD: SEO estructurado para Google y motores de IA ═══ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": ["Organization","Store"],
+          "@id": "https://enzodistribuciones.com/#organization",
+          "name": "Enzo Distribuciones",
+          "alternateName": ["Distribuidora Enzo","Ferretería Enzo Oberá"],
+          "url": "https://enzodistribuciones.com/",
+          "logo": "https://enzodistribuciones.com/logo-empresa.png",
+          "image": "https://enzodistribuciones.com/og-image.jpg",
+          "description": "Distribuidor mayorista de ferretería, herramientas, electricidad, plomería y pinturas en Oberá, Misiones. Venta por mayor a comercios, ferreterías y constructoras del NEA.",
+          "telephone": "+5493755503213",
+          "email": "distribuidoraenzo28@gmail.com",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Oberá",
+            "addressRegion": "Misiones",
+            "addressCountry": "AR"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": -27.4864,
+            "longitude": -55.1193
+          },
+          "areaServed": [
+            {"@type": "AdministrativeArea", "name": "Misiones"},
+            {"@type": "AdministrativeArea", "name": "Corrientes"},
+            {"@type": "AdministrativeArea", "name": "NEA Argentina"}
+          ],
+          "priceRange": "$$",
+          "currenciesAccepted": "ARS",
+          "paymentAccepted": "Efectivo, Transferencia bancaria",
+          "openingHours": "Mo-Fr 08:00-18:00",
+          "hasMap": "https://maps.google.com/?q=Obera+Misiones+Argentina",
+          "sameAs": [],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+5493755503213",
+            "contactType": "sales",
+            "contactOption": "TollFree",
+            "areaServed": "AR",
+            "availableLanguage": "Spanish"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://enzodistribuciones.com/#website",
+          "url": "https://enzodistribuciones.com/",
+          "name": "Enzo Distribuciones",
+          "publisher": {"@id": "https://enzodistribuciones.com/#organization"},
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://enzodistribuciones.com/productos.html?search={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
+    }
+    </script>
 </head>
 
-<body>
-    <!-- ░░ BANNER: SITIO EN DESARROLLO ░░ — Eliminar al lanzar en producción -->
-    <div id="dev-banner" style="
-        background: linear-gradient(135deg, #744210 0%, #92400E 100%);
-        color: #FEF3C7;
-        font-size: 0.8rem;
-        font-weight: 500;
-        padding: 8px 16px;
-        text-align: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        letter-spacing: 0.02em;
-        position: relative;
-        z-index: 9999;
-    ">
-        <span style="font-size: 1rem; line-height: 1;">🚧</span>
-        <span>Sitio en desarrollo — algunos cambios pueden no estar disponibles.</span>
-        <span style="background: rgba(255,255,255,0.15); padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;">BETA</span>
-        <button onclick="this.parentElement.style.display='none'" style="
-            background: none; border: none; color: #FEF3C7; cursor: pointer;
-            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-            font-size: 1.1rem; line-height: 1; opacity: 0.7; padding: 0;
-        " title="Cerrar">✕</button>
-    </div>
+<body class="home-shell">
+
     <div class="top-bar">
         <div class="container top-bar-content">
             <div class="top-bar-left">
@@ -75,57 +118,68 @@
             </div>
         </div>
     </div>
-    <header class="main-header">
-        <div class="container header-content">
-            
-            <button class="menu-toggle" id="mobile-menu-btn">
-                <span class="material-icons">menu</span>
-            </button>
+    <!-- HERO A PANTALLA COMPLETA con barra transparente integrada -->
+    <header class="hero-banner">
 
-           <a href="index.html" class="logo">
-            <img src="./EnzoDistribuidora.png" alt="Distribuciones Enzo">
-           </a>
-
-            <nav class="main-nav" id="main-nav">
-                <ul>
-                    
-                    <li><a href="productos.html">Productos</a></li>
-                    <li><a href="#ofertas">Ofertas</a></li>
-                    <li><a href="#contacto">Contacto</a></li>
-                </ul>
-            </nav>
-            
-            <div class="search-container">
-                <form class="search-bar" id="search-form">
-                    <input type="text" id="search-input" placeholder="Buscar producto, marca o categoría..." autocomplete="off">
-                    <button type="submit" class="search-btn">
-                        <span class="material-icons">search</span>
-                    </button>
-                </form>
-                <div class="search-results" id="search-results"></div>
-            </div>
-
-            <div class="user-actions">
-                
-               <a href="cuenta.html" class="btn-outline desktop-only">CUENTA</a>
-                
-                <a href="cuenta.html" class="mobile-user-icon">
-                    <span class="material-icons">person</span>
+        <!-- Barra única transparente: logo + nav + buscador + acciones -->
+        <nav class="site-nav">
+            <div class="container site-nav-inner">
+                <a href="index.html" class="logo">
+                    <img src="./EnzoDistribuidora.png" alt="Distribuciones Enzo">
                 </a>
-
-                <div class="cart-icon">
-                    <span class="material-icons">shopping_cart</span>
-                    <span class="badge">0</span>
+                <button class="menu-toggle" id="mobile-menu-btn" aria-label="Abrir menú">
+                    <span class="material-icons">menu</span>
+                </button>
+                <div class="main-nav" id="main-nav">
+                    <ul>
+                        <li><a href="index.html"><span class="material-icons">home</span> Inicio</a></li>
+                        <li><a href="productos.html"><span class="material-icons">inventory_2</span> Productos</a></li>
+                        <li><a href="#ofertas"><span class="material-icons">local_offer</span> Ofertas</a></li>
+                        <li><a href="#nosotros"><span class="material-icons">groups</span> Nosotros</a></li>
+                        <li class="nav-account-item"><a href="cuenta.html"><span class="material-icons">person</span> Cuenta</a></li>
+                    </ul>
+                </div>
+                <div class="search-container">
+                    <form class="search-bar" id="search-form">
+                        <input type="text" id="search-input" placeholder="Buscar producto, marca o categoría..." autocomplete="off">
+                        <button type="submit" class="search-btn" aria-label="Buscar">
+                            <span class="material-icons">search</span>
+                        </button>
+                    </form>
+                    <div class="search-results" id="search-results"></div>
+                </div>
+                <div class="user-actions">
+                    <a href="cuenta.html" class="btn-outline desktop-only">CUENTA</a>
+                    <a href="cuenta.html" class="mobile-user-icon">
+                        <span class="material-icons">person</span>
+                    </a>
+                    <div class="cart-icon" role="button" tabindex="0" aria-label="Abrir carrito">
+                        <span class="material-icons">shopping_cart</span>
+                        <span class="badge">0</span>
+                    </div>
                 </div>
             </div>
-        </div>
-    </header>
+        </nav>
 
-<header class="hero-banner">
+        <div class="hero-deco" aria-hidden="true">
+            <span class="tri tri-1"></span>
+            <span class="tri tri-2"></span>
+            <span class="tri tri-3"></span>
+            <span class="tri tri-4"></span>
+        </div>
+
         <div class="hero-content">
-            <h1 style="font-size: 3rem;">Distribuidor Mayorista Ferretero en Misiones</h1>
+            <h1 style="font-size: clamp(1.9rem, 5.5vw, 3rem);">Distribuidor Mayorista Ferretero en Misiones</h1>
             <p>Stock permanente, marcas líderes y logística rápida. Abastecemos tu negocio o constructora.</p>
-            <a href="productos.html" class="btn-hero">Ver Catálogo</a>
+            <div class="hero-actions">
+                <a href="productos.html" class="btn-hero">Ver Catálogo</a>
+                <a href="cuenta.html" class="btn-hero-outline">Solicitar acceso mayorista</a>
+            </div>
+            <div class="hero-chips">
+                <span><span class="material-icons">local_shipping</span> Envíos a Misiones y Corrientes</span>
+                <span><span class="material-icons">verified</span> +40 marcas líderes</span>
+                <span><span class="material-icons">support_agent</span> Atención directa</span>
+            </div>
         </div>
     </header>
 <!--
@@ -201,9 +255,9 @@
                 <div class="divider-light"></div>
             </div>
             <div class="carousel-b2b-wrapper">
-                <button class="carousel-arrow left-arrow" id="btn-nuevos-prev"><span class="material-icons">chevron_left</span></button>
+                <button class="carousel-arrow left-arrow" id="btn-nuevos-prev" aria-label="Anterior"><span class="material-icons">chevron_left</span></button>
                 <div class="product-carousel" id="contenedor-nuevos"></div>
-                <button class="carousel-arrow right-arrow" id="btn-nuevos-next"><span class="material-icons">chevron_right</span></button>
+                <button class="carousel-arrow right-arrow" id="btn-nuevos-next" aria-label="Siguiente"><span class="material-icons">chevron_right</span></button>
             </div>
         </div>
     </section>
@@ -216,9 +270,9 @@
             </div>
 
             <div class="carousel-b2b-wrapper">
-                <button class="carousel-arrow left-arrow" id="btn-ofertas-prev"><span class="material-icons">chevron_left</span></button>
+                <button class="carousel-arrow left-arrow" id="btn-ofertas-prev" aria-label="Anterior"><span class="material-icons">chevron_left</span></button>
                 <div class="product-carousel" id="contenedor-ofertas"></div>
-                <button class="carousel-arrow right-arrow" id="btn-ofertas-next"><span class="material-icons">chevron_right</span></button>
+                <button class="carousel-arrow right-arrow" id="btn-ofertas-next" aria-label="Siguiente"><span class="material-icons">chevron_right</span></button>
             </div>
             
             <div class="view-more-container">
@@ -348,7 +402,7 @@
 
         <div class="carousel-b2b-wrapper">
             
-            <button class="carousel-arrow left-arrow" id="btn-cat-prev">
+            <button class="carousel-arrow left-arrow" id="btn-cat-prev" aria-label="Anterior">
                 <span class="material-icons">chevron_left</span>
             </button>
 
@@ -357,23 +411,23 @@
                     <a href="productos.html?category=electricas" class="b2b-cat-banner cat-electricas">
                         <div class="cat-overlay"></div>
                         <div class="cat-content">
-                            <h3>Eléctricas</h3>
+                            <h3>Herramientas Eléctricas</h3>
                             <span class="btn-ghost">Ver Catálogo <span class="material-icons">arrow_forward</span></span>
                         </div>
                     </a>
 
-                    <a href="productos.html?category=pinturas" class="b2b-cat-banner cat-pinturas">
+                    <a href="productos.html?category=pintureria" class="b2b-cat-banner cat-pinturas">
                         <div class="cat-overlay"></div>
                         <div class="cat-content">
-                            <h3>Pinturas</h3>
+                            <h3>Pinturería</h3>
                             <span class="btn-ghost">Ver Catálogo <span class="material-icons">arrow_forward</span></span>
                         </div>
                     </a>
 
-                    <a href="productos.html?category=plomeria" class="b2b-cat-banner cat-plomeria">
+                    <a href="productos.html?category=griferias" class="b2b-cat-banner cat-plomeria">
                         <div class="cat-overlay"></div>
                         <div class="cat-content">
-                            <h3>Plomería</h3>
+                            <h3>Griferías</h3>
                             <span class="btn-ghost">Ver Catálogo <span class="material-icons">arrow_forward</span></span>
                         </div>
                     </a>
@@ -386,10 +440,10 @@
                         </div>
                     </a>
 
-                    <a href="productos.html?category=bazar" class="b2b-cat-banner cat-bazar">
+                    <a href="productos.html?category=hogar" class="b2b-cat-banner cat-bazar">
                         <div class="cat-overlay"></div>
                         <div class="cat-content">
-                            <h3>Bazar</h3>
+                            <h3>Hogar</h3>
                             <span class="btn-ghost">Ver Catálogo <span class="material-icons">arrow_forward</span></span>
                         </div>
                     </a>
@@ -405,7 +459,7 @@
                 </div>
             
 
-            <button class="carousel-arrow right-arrow" id="btn-cat-next">
+            <button class="carousel-arrow right-arrow" id="btn-cat-next" aria-label="Siguiente">
                 <span class="material-icons">chevron_right</span>
             </button>
       
@@ -428,7 +482,7 @@
                 
                 <div class="social-links">
                     <a href="#" class="social-icon" title="Seguinos en Facebook">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
+            =            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
                     </a>
                     <a href="https://www.instagram.com/ferreteriaydistribucionesenzo/" class="social-icon" title="Seguinos en Instagram">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 1.77-6.98 6.275-.058 1.28-.072 1.688-.072 4.948s.014 3.668.072 4.948c.2 4.505 2.622 6.075 6.98 6.275 1.28.058 1.689.072 4.947.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-1.77 6.979-6.275.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.505-2.624-6.075-6.98-6.274-1.28-.059-1.689-.073-4.948-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
@@ -454,7 +508,7 @@
                     <li><span class="material-icons">storefront</span> Depósito Principal: Oberá, Misiones</li>
                     <li><span class="material-icons">local_shipping</span> Envíos a todo el NEA</li>
                     <li><span class="material-icons">phone_iphone</span>+54 9 3755 503213</li>
-                    <li><span class="material-icons">email</span> enzodistribuciones22@gmail.com</li>
+                    <li><span class="material-icons">email</span> distribuidoraenzo28@gmail.com</li>
                     <li>
                             <a href="https://maps.app.goo.gl/1zxqXTmRq9H8Ay4e6" target="_blank">
                                 <span class="material-icons">location_on</span> Ushuaia 331, N3361 Oberá, Misiones
@@ -557,18 +611,40 @@
     </div>
 
     <div class="cart-overlay" id="cart-overlay"></div>
-<div class="cart-drawer" id="cart-drawer">
+<div class="cart-drawer" id="cart-drawer" data-step="1">
+        <!-- Header -->
         <div class="cart-header">
-            <h3 id="cart-title-step">Tu Carrito <span id="cart-count-header">(0)</span></h3>
-            <button class="close-cart-btn" id="close-cart-btn"><span class="material-icons">close</span></button>
+            <h3 id="cart-title-step">
+                <span class="material-icons" style="font-size:1.2rem;color:var(--primary-blue)">shopping_cart</span>
+                Tu Carrito <span id="cart-count-header">(0)</span>
+            </h3>
+            <button class="close-cart-btn" id="close-cart-btn" title="Volver al catálogo" aria-label="Cerrar carrito">
+                <span class="material-icons">close</span>
+            </button>
         </div>
-        
-        <div class="cart-items checkout-step" id="checkout-step-1">
-            <div id="cart-items-container"></div>
-        </div>
+
+        <!-- Body: 2 columnas -->
+        <div class="cart-body">
+
+            <!-- Columna izquierda: items del carrito -->
+            <div class="cart-items-col">
+                <div id="cart-items-container"></div>
+            </div>
+
+            <!-- Columna derecha: checkout steps + resumen -->
+            <div class="cart-summary-col">
+
+                <div class="cart-items checkout-step" id="checkout-step-1" style="display:none">
+                    <!-- step 1 vacío — los items están en cart-items-col -->
+                </div>
 
         <div class="cart-items checkout-step" id="checkout-step-2" style="display: none; padding: 25px;">
             <h4 style="margin-bottom: 20px; color: var(--primary-dark); border-bottom: 2px solid #E2E8F0; padding-bottom: 5px;">Tus Datos Comerciales</h4>
+            <!-- Badge: datos pre-cargados del perfil -->
+            <div id="chk-prefill-badge" style="display:none;align-items:center;gap:8px;background:#E1F5EE;border:1px solid #9AE6B4;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#276749;">
+                <span class="material-icons" style="font-size:15px;color:#38A169;">check_circle</span>
+                <span>Datos cargados desde tu perfil — podés modificarlos si querés.</span>
+            </div>
             <div class="form-group"><input type="text" id="chk-nombre" placeholder="Nombre o Razón Social" class="modal-input" required></div>
             <div class="form-group"><input type="tel" id="chk-telefono" placeholder="Teléfono / WhatsApp" class="modal-input" required></div>
             <div class="form-group"><input type="text" id="chk-direccion" placeholder="Dirección Exacta (Ej: Av. San Martín 123)" class="modal-input" required></div>
@@ -591,7 +667,7 @@
             <label style="font-weight: bold; font-size: 0.9rem; display:block; margin-bottom: 5px;">Preferencia de Pago</label>
             <select id="chk-pago" class="modal-input" style="margin-bottom: 20px; padding: 10px;">
                 <option value="Transferencia">Transferencia Bancaria</option>
-                <option value="Efectivo">Efectivo en Local (10% OFF)</option>
+                <option value="Efectivo">Efectivo en Local</option>
             </select>
 
             <label style="font-weight: bold; font-size: 0.9rem; display:block; margin-bottom: 5px;">Indicaciones para el transporte</label>
@@ -640,10 +716,17 @@
                 </button>
                 <button class="btn-clear" id="btn-clear-cart" style="color: #A0AEC0; margin-left: auto;">Vaciar Carrito</button>
             </div>
-        </div>
-    </div>
+        </div><!-- fin cart-footer -->
+            </div><!-- fin cart-summary-col -->
+        </div><!-- fin cart-body -->
+    </div><!-- fin cart-drawer -->
 
 
+        <!-- FAB: carrito flotante en mobile -->
+    <button class="cart-fab" id="cart-fab" onclick="renderizarCarrito(); abrirCarrito();" title="Ver carrito" aria-label="Ver carrito">
+        <span class="material-icons">shopping_cart</span>
+        <span class="fab-badge" id="fab-badge" style="display:none">0</span>
+    </button>
     <div id="toast" class="toast-notification">
         <span class="material-icons">check_circle</span>
         <span id="toast-message">Agregado</span>
@@ -655,6 +738,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 
-    <script src="script.js"></script>
+    <script src="script.js?v=9"></script>
+
+    <script>
+    // Sombra del header al scrollear
+    window.addEventListener('scroll', function() {
+        const h = document.querySelector('.main-header');
+        if (h) h.classList.toggle('scrolled', window.scrollY > 10);
+    }, { passive: true });
+    </script>
 </body>
 </html>
