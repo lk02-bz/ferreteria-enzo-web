@@ -703,6 +703,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // C. Interfaz común
     actualizarBadgeCarrito();
     iniciarInterfaz();
+    configurarHeaderScroll();
+    configurarNavHero();
     configurarEventosCarrito();
     activarDragCarruseles();
     configurarModalsServicios();
@@ -945,8 +947,10 @@ async function enviarSolicitudAcceso() {
     }
     if (errDiv) errDiv.style.display = 'none';
 
+    // Datos de texto en MAYÚSCULAS para prolijidad (el email NO, es la llave del login)
+    const up = (s) => (s || '').toUpperCase();
     const datos = {
-        nombre, dni, negocio, telefono, cuit, ciudad, direccion, email,
+        nombre: up(nombre), dni, negocio: up(negocio), telefono, cuit, ciudad: up(ciudad), direccion: up(direccion), email,
         fecha:    new Date(),
         estado:   'pendiente',
         aprobado: false
@@ -1751,13 +1755,13 @@ function renderizarGrid(lista, contenedor) {
             : (prod.codigo || 'S/C');
 
         let badgeHtml = '';
-        if (!hayStock)        badgeHtml = '<span class="card-badge agotado" style="background-color:#2D3748;color:white;">AGOTADO</span>';
-        else if (prod.nuevo)  badgeHtml = '<span class="card-badge nuevo"   style="background-color:#38bdf8;color:#0a192f;">NUEVO</span>';
-        else if (esOferta)    badgeHtml = '<span class="card-badge oferta"  style="background-color:#E53E3E;color:white;">OFERTA</span>';
+        if (!hayStock)        badgeHtml = '<span class="card-badge agotado">AGOTADO</span>';
+        else if (prod.nuevo)  badgeHtml = '<span class="card-badge nuevo">NUEVO</span>';
+        else if (esOferta)    badgeHtml = '<span class="card-badge oferta">OFERTA</span>';
 
         // Badge VARIANTES: nuevo sistema (esVariantePadre) y Sistema B antiguo (grupoId)
         const varBadge = (esVariantePadre || prod.grupoId)
-            ? `<span style="position:absolute;bottom:10px;right:10px;background:rgba(43,108,176,0.92);color:white;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.04em;">⚡ VARIANTES</span>`
+            ? `<span class="card-var-badge">⚡ VARIANTES</span>`
             : '';
 
         let precioHtml = '';
@@ -1805,7 +1809,7 @@ function renderizarGrid(lista, contenedor) {
         card.dataset.prodId = prod.id; // para scroll restoration
         card.dataset.nombre = prod.nombre || '';
         card.innerHTML = `
-            <a href="${link}" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;flex-grow:1;">
+            <a href="${link}" class="card-link">
                 <div class="card-image">
                     <img src="${prod.imagen}" alt="${escHtml(prod.nombre)}" loading="lazy" width="300" height="300">
                     ${badgeHtml}
@@ -2687,7 +2691,9 @@ function configurarCheckout() {
             const nom = document.getElementById('chk-nombre')?.value.trim();
             const tel = document.getElementById('chk-telefono')?.value.trim();
             const dir = document.getElementById('chk-direccion')?.value.trim();
-            if (!nom || !tel || !dir) { alert("Por favor, completá tu Nombre, Teléfono y Dirección."); return; }
+            const loc = document.getElementById('chk-localidad')?.value.trim();
+            const cpc = document.getElementById('chk-cp')?.value.trim();
+            if (!nom || !tel || !dir || !loc || !cpc) { alert("Por favor, completá tu Nombre, Teléfono, Dirección, Localidad y Código Postal."); return; }
             document.getElementById('checkout-step-2').style.display = 'none';
             document.getElementById('checkout-step-3').style.display = 'block';
             title.innerHTML = 'Paso 3 de 3: Finalizar';
@@ -2731,7 +2737,7 @@ function preLlenarCheckout() {
     set('chk-nombre',    perfil.negocio    || perfil.nombre || '');
     set('chk-telefono',  perfil.telefono   || '');
     set('chk-direccion', perfil.direccion  || '');
-    set('chk-localidad', perfil.localidad  || '');
+    set('chk-localidad', perfil.localidad  || perfil.ciudad || '');
     set('chk-cp',        perfil.cp         || '');
 
     // Indicador visual debajo del formulario
@@ -3187,4 +3193,46 @@ if (formFeedback) {
             btn.textContent = "ENVIAR MENSAJE"; btn.disabled = false;
         }
     });
+}
+
+/* ==========================================================================
+   23. HEADER GLASS AL SCROLLEAR (Fase 3 — microinteracciones)
+   Agrega/quita la clase .scrolled al header según la posición del scroll.
+   El estilo glass vive en styles.css (.main-header.scrolled). Listener
+   pasivo + rAF para no impactar el rendimiento del scroll.
+   ========================================================================== */
+function configurarHeaderScroll() {
+    const header = document.querySelector('.main-header');
+    if (!header) return;
+    let ticking = false;
+    const aplicar = () => {
+        header.classList.toggle('scrolled', window.scrollY > 20);
+        ticking = false;
+    };
+    window.addEventListener('scroll', () => {
+        if (!ticking) { window.requestAnimationFrame(aplicar); ticking = true; }
+    }, { passive: true });
+    aplicar(); // estado inicial (por si la página carga ya scrolleada)
+}
+
+/* ==========================================================================
+   24. BARRA DEL HERO: transparente sobre el hero → sólida al pasar el hero
+   (solo en la home con .site-nav + .hero-banner a pantalla completa)
+   ========================================================================== */
+function configurarNavHero() {
+    const nav  = document.querySelector('.site-nav');
+    const hero = document.querySelector('.hero-banner');
+    if (!nav || !hero) return;
+    let ticking = false;
+    const aplicar = () => {
+        // Se vuelve sólida recién cuando se terminó de scrollear TODO el hero
+        const disparo = Math.max(0, hero.offsetHeight - nav.offsetHeight);
+        nav.classList.toggle('solid', window.scrollY > disparo);
+        ticking = false;
+    };
+    window.addEventListener('scroll', () => {
+        if (!ticking) { window.requestAnimationFrame(aplicar); ticking = true; }
+    }, { passive: true });
+    window.addEventListener('resize', aplicar, { passive: true });
+    aplicar();
 }

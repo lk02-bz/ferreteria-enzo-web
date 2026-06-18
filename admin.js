@@ -2738,6 +2738,12 @@ window.prepararPlantillaPDF = async function(idPedido) {
         document.getElementById('print-client-phone').textContent = logistica.telefono || 'S/D';
         document.getElementById('print-client-shipping').textContent = logistica.metodoEnvio || '-';
         document.getElementById('print-client-payment').textContent = logistica.metodoPago || '-';
+        document.getElementById('print-client-type').textContent = data.tipoCliente || '-';
+        document.getElementById('print-client-email').textContent = data.emailUsuario || '-';
+        const _notas = (logistica.notas || '').trim();
+        document.getElementById('print-client-notes').textContent = _notas || 'Sin indicaciones';
+        const _notesRow = document.getElementById('print-client-notes-row');
+        if (_notesRow) _notesRow.style.display = _notas ? 'block' : 'none';
 
         const tbody = document.getElementById('print-items-body');
         let htmlFilas = '';
@@ -2824,21 +2830,54 @@ window.descargarCatalogoPDF = async function(btn) {
 
     try {
         // ── 1. Agrupar y ordenar productos ───────────────────────────────
+        // Los productos con variantes embebidas se EXPANDEN: cada variante
+        // genera su propia tarjeta con su código, nombre, precio e imagen
+        // reales (igual que en la tienda). El campo prod.codigo del padre es
+        // solo el nombre del grupo, por eso no debe usarse para las variantes.
+        function expandirProducto(prod) {
+            if (prod.tieneVariantes && Array.isArray(prod.variantes) && prod.variantes.length > 0) {
+                return prod.variantes.map(v => ({
+                    marca:        prod.marca || '',
+                    nombre:       v.nombre || `${prod.nombre || ''}${v.etiqueta ? ' - ' + v.etiqueta : ''}`,
+                    codigo:       v.codigo || prod.codigo || 'S/C',
+                    precio:       (v.precio != null && v.precio !== '') ? v.precio : prod.precio,
+                    imagen:       v.imagen || prod.imagen,
+                    enOferta:     prod.enOferta,
+                    nuevo:        prod.nuevo,
+                    vendePorCaja: false   // las variantes no manejan precio por caja
+                }));
+            }
+            return [{
+                marca:           prod.marca || '',
+                nombre:          prod.nombre || '',
+                codigo:          prod.codigo || 'S/C',
+                precio:          prod.precio,
+                imagen:          prod.imagen,
+                enOferta:        prod.enOferta,
+                nuevo:           prod.nuevo,
+                vendePorCaja:    prod.vendePorCaja,
+                precioCaja:      prod.precioCaja,
+                unidadesPorCaja: prod.unidadesPorCaja
+            }];
+        }
+
         const grupos = {};
         productosAdmin.forEach(prod => {
             const cat = (prod.categoria || 'OTROS').toUpperCase();
             if (!grupos[cat]) grupos[cat] = [];
-            grupos[cat].push(prod);
+            expandirProducto(prod).forEach(entrada => grupos[cat].push(entrada));
         });
 
+        let totalTarjetas = 0;
         let htmlProductos = '';
         Object.keys(grupos).sort().forEach(cat => {
 
             htmlProductos += `<div class="cat-header">${cat}</div><div class="products-grid">`;
 
             grupos[cat]
-                .sort((a, b) => ((a.marca||'')+(a.nombre||'')).localeCompare((b.marca||'')+(b.nombre||'')))
+                .sort((a, b) => (a.codigo||'').localeCompare((b.codigo||''), 'es', { numeric: true, sensitivity: 'base' }))
                 .forEach(prod => {
+                    totalTarjetas++;
                     const tieneImg = prod.imagen && prod.imagen.startsWith('http') && !prod.imagen.includes('placehold');
                     const precio   = prod.precio ? `$${parseInt(prod.precio).toLocaleString('es-AR')}` : 'Consultar';
                     const badge    = prod.enOferta
@@ -2916,7 +2955,7 @@ body { font-family: Arial, sans-serif; font-size: 10px; background: white; paddi
     <div class="header-info">
         <h1>Catálogo de Productos</h1>
         <p>Depósito: Ushuaia 331, Oberá, Misiones &nbsp;|&nbsp; WhatsApp: +54 9 3755 503213</p>
-        <p>Lista de precios actualizada al: <strong>${fecha}</strong> &nbsp;|&nbsp; <strong>${productosAdmin.length} productos</strong></p>
+        <p>Lista de precios actualizada al: <strong>${fecha}</strong> &nbsp;|&nbsp; <strong>${totalTarjetas} productos</strong></p>
     </div>
 </div>
 
@@ -3624,6 +3663,10 @@ async function cargarUsuariosAprobados() {
                 <td style="padding:10px 12px;">
                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
                         ${botonesAccion}
+                        <button onclick="editarUsuario('${uid}')"
+                            style="background:#3182CE;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.78rem;display:flex;align-items:center;gap:4px;">
+                            <span class="material-icons" style="font-size:0.9rem;">edit</span> EDITAR
+                        </button>
                         <button onclick="eliminarCuentaUsuario('${uid}', '${(d.nombre||'').replace(/'/g,'')}', '${d.email||''}')"
                             style="background:#E53E3E;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.78rem;display:flex;align-items:center;gap:4px;">
                             <span class="material-icons" style="font-size:0.9rem;">delete</span> ELIMINAR
@@ -3701,6 +3744,77 @@ window.eliminarCuentaUsuario = async function(uid, nombre, email) {
         console.error(err);
     }
 };
+
+// ── Editar usuario registrado (modifica el documento en "usuarios") ───────────
+window.editarUsuario = async function(uid) {
+    const errBox = document.getElementById('edit-usr-error');
+    if (errBox) errBox.style.display = 'none';
+    try {
+        const doc = await db.collection('usuarios').doc(uid).get();
+        if (!doc.exists) { alert('No se encontró el usuario.'); return; }
+        const d = doc.data();
+        document.getElementById('edit-usr-uid').value       = uid;
+        document.getElementById('edit-usr-nombre').value    = d.nombre    || '';
+        document.getElementById('edit-usr-dni').value       = d.dni       || '';
+        document.getElementById('edit-usr-email').value     = d.email     || '';
+        document.getElementById('edit-usr-negocio').value   = d.negocio   || '';
+        document.getElementById('edit-usr-cuit').value      = d.cuit      || '';
+        document.getElementById('edit-usr-telefono').value  = d.telefono  || '';
+        document.getElementById('edit-usr-ciudad').value    = d.ciudad    || d.localidad || '';
+        document.getElementById('edit-usr-direccion').value = d.direccion || '';
+        document.getElementById('modal-editar-usuario').style.display = 'flex';
+    } catch (err) {
+        alert('Error al cargar el usuario: ' + err.message);
+        console.error(err);
+    }
+};
+
+window.cerrarModalEditarUsuario = function() {
+    const m = document.getElementById('modal-editar-usuario');
+    if (m) m.style.display = 'none';
+};
+
+// Guardar cambios — texto en MAYÚSCULAS (el email es la llave del login, no se toca)
+const formEditarUsuario = document.getElementById('form-editar-usuario');
+if (formEditarUsuario) {
+    formEditarUsuario.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const up  = (s) => (s || '').trim().toUpperCase();
+        const uid = document.getElementById('edit-usr-uid').value;
+        const errBox = document.getElementById('edit-usr-error');
+        const nombre = up(document.getElementById('edit-usr-nombre').value);
+        if (!uid) return;
+        if (!nombre) {
+            if (errBox) { errBox.textContent = 'El nombre es obligatorio.'; errBox.style.display = 'block'; }
+            return;
+        }
+
+        const cambios = {
+            nombre,
+            dni:       document.getElementById('edit-usr-dni').value.trim(),
+            negocio:   up(document.getElementById('edit-usr-negocio').value),
+            cuit:      document.getElementById('edit-usr-cuit').value.trim(),
+            telefono:  document.getElementById('edit-usr-telefono').value.trim(),
+            ciudad:    up(document.getElementById('edit-usr-ciudad').value),
+            direccion: up(document.getElementById('edit-usr-direccion').value)
+        };
+
+        const btn = document.getElementById('edit-usr-submit-btn');
+        const txtOriginal = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Guardando...'; }
+        try {
+            await db.collection('usuarios').doc(uid).update(cambios);
+            cerrarModalEditarUsuario();
+            mostrarNotificacionAdmin('✅ Usuario actualizado correctamente.');
+            cargarUsuariosAprobados();
+        } catch (err) {
+            if (errBox) { errBox.textContent = 'Error al guardar: ' + err.message; errBox.style.display = 'block'; }
+            console.error(err);
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = txtOriginal; }
+        }
+    });
+}
 
 // ── Solicitudes RECHAZADAS ────────────────────────────────────────────────────
 async function cargarSolicitudesRechazadas() {

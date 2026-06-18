@@ -693,6 +693,89 @@
         </div>
     </div>
 
+    <!-- ============================================================
+         MODAL: EDITAR USUARIO REGISTRADO
+         ============================================================ -->
+    <div id="modal-editar-usuario" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:14px;padding:28px;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h3 style="margin:0;color:#2D3748;">✏️ Editar Usuario</h3>
+                <button onclick="cerrarModalEditarUsuario()" style="background:none;border:none;cursor:pointer;font-size:1.5rem;color:#718096;">&times;</button>
+            </div>
+            <form id="form-editar-usuario">
+                <input type="hidden" id="edit-usr-uid">
+                <div style="display:grid;gap:11px;">
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Nombre Completo *</label>
+                            <input type="text" id="edit-usr-nombre" placeholder="Juan Pérez"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">DNI</label>
+                            <input type="text" id="edit-usr-dni" placeholder="44262703" maxlength="8"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;font-family:monospace;font-weight:600;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Email (no editable)</label>
+                        <input type="email" id="edit-usr-email" disabled
+                            style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;background:#EDF2F7;color:#718096;">
+                        <small style="color:#718096;font-size:0.78rem;">El email es la llave del login; se cambia desde Firebase Console.</small>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Negocio / Empresa *</label>
+                            <input type="text" id="edit-usr-negocio" placeholder="Ferretería El Tornillo"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">CUIT</label>
+                            <input type="text" id="edit-usr-cuit" placeholder="20-12345678-9" maxlength="13"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;font-family:monospace;">
+                        </div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Teléfono</label>
+                            <input type="tel" id="edit-usr-telefono" placeholder="3755-123456"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Ciudad / Localidad</label>
+                            <input type="text" id="edit-usr-ciudad" placeholder="Oberá, Misiones"
+                                style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size:0.78rem;font-weight:700;color:#4A5568;display:block;margin-bottom:4px;text-transform:uppercase;">Dirección</label>
+                        <input type="text" id="edit-usr-direccion" placeholder="Av. San Martín 540"
+                            style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                    </div>
+
+                </div>
+
+                <div id="edit-usr-error" style="display:none;background:#FFF5F5;border:1px solid #FC8181;color:#C53030;border-radius:8px;padding:10px 14px;font-size:0.85rem;margin-top:12px;"></div>
+
+                <div style="display:flex;gap:10px;margin-top:18px;">
+                    <button type="button" onclick="cerrarModalEditarUsuario()"
+                        style="flex:1;padding:11px;border:1.5px solid #E2E8F0;border-radius:8px;background:white;cursor:pointer;font-weight:600;color:#4A5568;">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="edit-usr-submit-btn"
+                        style="flex:2;padding:11px;background:#3182CE;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;">
+                        💾 GUARDAR CAMBIOS
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- FIN dashboard-screen -->
 
 
@@ -1072,6 +1155,8 @@
             <div>📍 <span id="print-client-address">Dirección</span> - <span id="print-client-city">Localidad</span> (CP: <span id="print-client-cp">0000</span>)</div>
             <div>📞 <span id="print-client-phone">Teléfono</span></div>
             <div>🚚 Envío: <strong id="print-client-shipping">Método</strong> | 💳 Pago: <strong id="print-client-payment">Método</strong></div>
+            <div>👤 Tipo: <strong id="print-client-type">-</strong> | ✉️ <span id="print-client-email">-</span></div>
+            <div id="print-client-notes-row" style="margin-top: 6px; padding: 6px 8px; background: #f4f4f4; border-left: 3px solid #000;">📝 <strong>Indicaciones:</strong> <span id="print-client-notes">-</span></div>
         </div>
 
         <h3 style="margin-bottom: 5px; font-size: 1rem; border-bottom: 2px solid #000; padding-bottom: 5px;" id="print-items-count">X ítems</h3>

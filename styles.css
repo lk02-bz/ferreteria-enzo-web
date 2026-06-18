@@ -19,6 +19,53 @@
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
     --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+    /* ======================================================================
+       DESIGN TOKENS — REDISEÑO 2026 (FASE 0)
+       Aditivos: NO cambian nada visible todavía. Usan la MISMA paleta.
+       Sirven de base para todas las fases siguientes.
+       ====================================================================== */
+
+    /* Sombras nuevas, multicapa y suaves (look moderno) */
+    --shadow-card:        0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.06);
+    --shadow-card-hover:  0 10px 20px rgba(26,54,93,.10), 0 18px 40px rgba(26,54,93,.12);
+    --shadow-glow:        0 0 0 1px rgba(49,130,206,.25), 0 8px 30px rgba(49,130,206,.18);
+
+    /* Radios consistentes */
+    --radius-sm:   8px;
+    --radius-md:   14px;
+    --radius-lg:   20px;
+    --radius-pill: 999px;
+
+    /* Transiciones y curvas de animación */
+    --ease-spring: cubic-bezier(.22, 1, .36, 1);
+    --ease-out:    cubic-bezier(.25, .8, .25, 1);
+    --t-fast: .15s;
+    --t-base: .30s;
+    --t-slow: .50s;
+
+    /* Gradientes de marca (mismos colores de la paleta) */
+    --grad-brand: linear-gradient(135deg, var(--primary-blue), var(--primary-dark));
+    --grad-cyan:  linear-gradient(135deg, var(--accent-cyan), var(--primary-blue));
+
+    /* Superficies "glass" (para header al scrollear, sidebar, drawer) */
+    --glass-bg:     rgba(255, 255, 255, .72);
+    --glass-border: rgba(255, 255, 255, .55);
+    --glass-blur:   14px;
+}
+
+/* ==========================================================================
+   ACCESIBILIDAD: respetar "Reducir movimiento" del sistema operativo.
+   Quien tenga esa preferencia NO verá animaciones (no cambia el look por
+   defecto del resto de los usuarios). Guardia para todas las fases.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 
@@ -243,6 +290,7 @@ img {
     border: 2px solid #E2E8F0; /* Borde un poquito más grueso */
     height: 46px;       /* Altura generosa y fácil de tocar */
     transition: all 0.3s ease;
+    width: 100%;
 }
 
 /* Efecto al hacer clic: Se ilumina el borde */
@@ -255,7 +303,7 @@ img {
     width: 100%;
     border: none;
     background: white;
-    padding: 0 25px;
+    padding: 0 5px;
     outline: none;
     color: var(--text-dark);
     font-size: 1.1rem;  /* AUMENTADO: Letra más grande (aprox 18px) */
@@ -266,7 +314,7 @@ img {
     background-color: var(--primary-blue);
     color: white;
     border: none;
-    padding: 0 30px;
+    padding: 0 8px;
     cursor: pointer;
     transition: background 0.3s;
     font-size: 1.6rem;  /* AUMENTADO: Lupa bien visible */
@@ -670,14 +718,18 @@ img {
 .product-card {
     background: var(--card-white);
     /* 🔥 REDUCIDO VERTICALMENTE: 12px arriba/abajo, 15px a los lados */
-    padding: 12px 15px; 
-    border: 1px solid transparent;
-    border-radius: 12px;
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    transition: transform var(--t-base) var(--ease-spring),
+                box-shadow var(--t-base) var(--ease-spring),
+                border-color var(--t-base) ease;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    position: relative;
+    overflow: hidden;
 }
 
 .card-image {
@@ -686,12 +738,16 @@ img {
     align-items: center;
     justify-content: center;
     margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #ffffff 0%, var(--grey-bg) 100%);
 }
 
 .product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-lg);
-    border-color: rgba(49, 130, 206, 0.3);
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-card-hover);
+    border-color: var(--accent-cyan);
 }
 
 
@@ -700,11 +756,77 @@ img {
     max-height: 100%;
     object-fit: contain;
     mix-blend-mode: multiply;
-    transition: transform 0.3s;
+    transition: transform var(--t-base) var(--ease-spring);
+    position: relative;
+    z-index: 0;
 }
 
 .product-card:hover .card-image img {
-    transform: scale(1.05);
+    transform: scale(1.08);
+}
+
+/* ── REDISEÑO 2026 — Tarjeta de producto (FASE 1) ─────────────────────────────
+   Piezas nuevas (pseudo-elementos y clases que reemplazan estilos inline del JS).
+   Todas usan los tokens de la Fase 0 y la misma paleta. */
+
+/* Línea de acento superior que se despliega en hover */
+.product-card::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--grad-cyan);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--t-base) var(--ease-out);
+    z-index: 3;
+}
+.product-card:hover::after { transform: scaleX(1); }
+
+/* Brillo (sheen) que cruza la imagen al pasar el mouse */
+.card-image::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -75%;
+    width: 50%; height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.65), transparent);
+    transform: skewX(-20deg);
+    transition: left var(--t-slow) var(--ease-out);
+    z-index: 1;
+    pointer-events: none;
+}
+.product-card:hover .card-image::before { left: 130%; }
+
+/* Badge de variantes (antes estilo inline en script.js) */
+.card-var-badge {
+    position: absolute;
+    bottom: 10px; right: 10px;
+    background: rgba(43, 108, 176, .92);
+    color: #fff;
+    font-size: .65rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: var(--radius-pill);
+    letter-spacing: .04em;
+    z-index: 3;
+    box-shadow: 0 2px 6px rgba(26, 54, 93, .25);
+}
+
+/* Enlace contenedor de la tarjeta (antes estilo inline) */
+.card-link {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+/* Pop sutil de los badges (OFERTA / NUEVO / AGOTADO) al aparecer */
+.card-badge { animation: badgePop var(--t-base) var(--ease-spring) both; }
+@keyframes badgePop {
+    0%   { transform: scale(.6);  opacity: 0; }
+    60%  { transform: scale(1.08); }
+    100% { transform: scale(1);   opacity: 1; }
 }
 
 .brand {
@@ -712,8 +834,8 @@ img {
     color: var(--primary-blue);
     font-weight: 800;
     background: #EBF8FF;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
     display: inline-block;
     margin-bottom: 8px;
     text-transform: uppercase;
@@ -771,19 +893,37 @@ img {
 
 .add-btn {
     flex-grow: 1;
+    background: var(--grad-brand);
     background-color: var(--primary-blue);
     color: white;
     border: none;
-    border-radius: 6px;
-    font-weight: bold;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: filter var(--t-fast) var(--ease-out),
+                box-shadow var(--t-fast) var(--ease-out),
+                transform var(--t-fast) var(--ease-out);
     font-size: 0.85rem;
+    letter-spacing: .03em;
     text-transform: uppercase;
 }
 
 .add-btn:hover {
-    background-color: var(--primary-dark);
+    filter: brightness(1.08);
+    box-shadow: 0 6px 16px rgba(49, 130, 206, .35);
+    transform: translateY(-1px);
+}
+.add-btn:active { transform: translateY(0) scale(.98); }
+
+/* Estado deshabilitado (sin stock): gris plano, sin gradiente ni efectos */
+.add-btn.disabled,
+.add-btn:disabled {
+    background: #CBD5E0 !important;
+    color: #fff;
+    cursor: not-allowed;
+    filter: none;
+    box-shadow: none;
+    transform: none;
 }
 
 .view-more-container {
@@ -2858,8 +2998,8 @@ img {
     .cart-icon .material-icons { font-size: 1.8rem; color: var(--text-dark); }
 
     .search-container { width: 100%; margin-top: 15px; order: 5; }
-    .search-bar { height: 42px; background-color: #F0F2F5; border: 1px solid #E2E8F0; box-shadow: none; border-radius: 8px; }
-    .search-bar input { font-size: 0.95rem; background: transparent; }
+    .search-bar { height: 28px; background-color: #F0F2F5; border: 1px solid #E2E8F0; box-shadow: none; border-radius: 8px; }
+    .search-bar input { font-size: 0.85rem; background: transparent; }
     .search-bar button.search-btn { background: var(--primary-blue); border-radius: 0 8px 8px 0; }
     /* -------- esta animacion es para el carrusel infinito--------*/
   .trusted-brands-clean { padding: 20px 0 30px 0; }
@@ -3849,4 +3989,567 @@ body {
         max-width: 100% !important;
         overflow: hidden !important;
     }
+}
+
+/* ==========================================================================
+   ████  REDISEÑO 2026 — FASE 2: HOME  ████
+   Bloque AÑADIDO al final: solo extiende/override las secciones del home.
+   No modifica reglas previas (cero riesgo) y es fácil de revertir.
+   Usa los tokens de la Fase 0 y la MISMA paleta de colores.
+   ========================================================================== */
+
+/* ── HERO ─────────────────────────────────────────────────────────────────── */
+.hero-banner {
+    overflow: hidden;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+/* Más alto SOLO en desktop (no pisar la altura móvil de 260px) */
+@media (min-width: 769px) {
+    .hero-banner { height: 520px; }
+}
+/* Resplandores de marca en movimiento, por encima de la foto y bajo el texto */
+.hero-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+        radial-gradient(40% 55% at 18% 25%, rgba(99,179,237,.28), transparent 60%),
+        radial-gradient(45% 60% at 85% 80%, rgba(49,130,206,.30), transparent 60%);
+    animation: heroGlow 12s ease-in-out infinite alternate;
+}
+@keyframes heroGlow {
+    0%   { transform: translate3d(0,0,0)      scale(1);    opacity: .85; }
+    100% { transform: translate3d(0,-14px,0)  scale(1.08); opacity: 1; }
+}
+.hero-content { z-index: 2; }
+/* Entrada escalonada del contenido del hero */
+.hero-content h1 { animation: heroUp .8s var(--ease-spring) backwards; }
+.hero-content p  { animation: heroUp .8s var(--ease-spring) .15s backwards; }
+.hero-content .btn-hero { animation: heroUp .8s var(--ease-spring) .3s backwards; }
+@keyframes heroUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+/* Botón del hero: gradiente de marca + brillo que cruza en hover */
+.btn-hero {
+    background: var(--grad-brand);
+    border-radius: var(--radius-pill);
+    position: relative;
+    overflow: hidden;
+    transition: transform var(--t-base) var(--ease-spring),
+                box-shadow var(--t-base) var(--ease-spring);
+}
+.btn-hero::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -120%;
+    width: 60%; height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.45), transparent);
+    transform: skewX(-20deg);
+    transition: left var(--t-slow) var(--ease-out);
+}
+.btn-hero:hover::after { left: 140%; }
+.btn-hero:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(49,130,206,.55); }
+
+/* ── TÍTULOS DE SECCIÓN ───────────────────────────────────────────────────── */
+.divider {
+    width: 84px;
+    height: 4px;
+    background: var(--grad-cyan);
+    border-radius: var(--radius-pill);
+}
+
+/* ── TARJETAS DE SERVICIO (estilo bento) ──────────────────────────────────── */
+.service-card {
+    border: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color);   /* quitamos la línea azul dura */
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    position: relative;
+    transition: transform var(--t-base) var(--ease-spring),
+                box-shadow var(--t-base) var(--ease-spring),
+                border-color var(--t-base) ease,
+                opacity var(--t-base) ease;
+}
+/* Acento superior que se despliega en hover */
+.service-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--grad-brand);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--t-base) var(--ease-out);
+}
+.service-card:hover::before { transform: scaleX(1); }
+.service-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-card-hover);
+    border-color: var(--accent-cyan);
+}
+/* Ícono dentro de un chip con gradiente suave */
+.service-card .icon-box {
+    width: 60px; height: 60px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #EBF8FF, #E2ECF8);
+    color: var(--primary-blue);
+    transition: transform var(--t-base) var(--ease-spring);
+}
+.service-card:hover .icon-box {
+    transform: translateY(-3px) rotate(-6deg);
+}
+.service-card .icon-box .material-icons { font-size: 2rem; }
+
+/* ── BANNER MAYORISTA ─────────────────────────────────────────────────────── */
+.wholesale-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+        radial-gradient(35% 80% at 12% 50%, rgba(99,179,237,.22), transparent 60%),
+        radial-gradient(40% 90% at 88% 50%, rgba(49,130,206,.20), transparent 60%);
+    animation: heroGlow 14s ease-in-out infinite alternate;
+}
+.btn-banner { position: relative; overflow: hidden; }
+.btn-banner::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -120%;
+    width: 55%; height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.55), transparent);
+    transform: skewX(-20deg);
+    transition: left var(--t-slow) var(--ease-out);
+}
+.btn-banner:hover::after { left: 150%; }
+
+/* ── CARRUSEL: FLECHAS CIRCULARES GLASS ───────────────────────────────────── */
+.carousel-arrow {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-pill);
+    background: var(--glass-bg);
+    color: var(--primary-dark);
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
+}
+.carousel-arrow .material-icons { font-size: 1.8rem; }
+.carousel-arrow:hover {
+    width: 48px;
+    background: var(--primary-blue);
+    color: #fff;
+    transform: translateY(-50%) scale(1.08);
+}
+.left-arrow  { left: -6px;  border-radius: var(--radius-pill); }
+.right-arrow { right: -6px; border-radius: var(--radius-pill); }
+
+/* ── BANNERS DE CATEGORÍA ─────────────────────────────────────────────────── */
+.b2b-cat-banner {
+    border-radius: var(--radius-md);
+    transition: transform var(--t-slow) var(--ease-spring), box-shadow var(--t-slow) ease;
+}
+.b2b-cat-banner:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-card-hover);
+}
+
+/* ==========================================================================
+   ████  REDISEÑO 2026 — FASE 3: MICROINTERACCIONES GLOBALES  ████
+   Añadido al final: no modifica reglas previas. Mismos tokens y paleta.
+   ========================================================================== */
+
+/* ── HEADER GLASS AL SCROLLEAR ────────────────────────────────────────────────
+   La clase .scrolled la agrega/quita configurarHeaderScroll() en script.js. */
+.main-header {
+    transition: box-shadow var(--t-base) ease,
+                padding var(--t-base) ease,
+                background var(--t-base) ease;
+}
+.main-header.scrolled {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+    box-shadow: 0 6px 24px rgba(16, 24, 40, .10);
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+/* ── SCROLL-REVEAL DEL CATÁLOGO (solo opacidad) ───────────────────────────────
+   Importante: animamos SOLO opacity (no transform) para no alterar el cálculo
+   de posición de la restauración de scroll al volver del detalle. */
+@keyframes cardIn { from { opacity: 0; } to { opacity: 1; } }
+.product-grid .product-card {
+    animation: cardIn .5s var(--ease-out) both;
+}
+.product-grid .product-card:nth-child(1)  { animation-delay: .00s; }
+.product-grid .product-card:nth-child(2)  { animation-delay: .03s; }
+.product-grid .product-card:nth-child(3)  { animation-delay: .06s; }
+.product-grid .product-card:nth-child(4)  { animation-delay: .09s; }
+.product-grid .product-card:nth-child(5)  { animation-delay: .12s; }
+.product-grid .product-card:nth-child(6)  { animation-delay: .15s; }
+.product-grid .product-card:nth-child(7)  { animation-delay: .18s; }
+.product-grid .product-card:nth-child(8)  { animation-delay: .21s; }
+.product-grid .product-card:nth-child(9)  { animation-delay: .24s; }
+.product-grid .product-card:nth-child(10) { animation-delay: .27s; }
+.product-grid .product-card:nth-child(11) { animation-delay: .30s; }
+.product-grid .product-card:nth-child(12) { animation-delay: .33s; }
+.product-grid .product-card:nth-child(n+13) { animation-delay: .36s; }
+
+/* ── MICROINTERACCIONES DE BOTONES ────────────────────────────────────────── */
+.btn-outline,
+.btn-view-more,
+.search-btn,
+.contact-boss-btn {
+    transition: transform var(--t-fast) var(--ease-out),
+                box-shadow var(--t-fast) var(--ease-out),
+                background var(--t-fast) ease,
+                color var(--t-fast) ease;
+}
+.btn-outline:hover,
+.btn-view-more:hover,
+.contact-boss-btn:hover { transform: translateY(-2px); }
+.btn-outline:active,
+.btn-view-more:active,
+.search-btn:active,
+.contact-boss-btn:active,
+.add-btn:active,
+.btn-hero:active,
+.btn-banner:active { transform: scale(.97); }
+.search-btn:hover { transform: scale(1.06); }
+
+/* ── FOCO ACCESIBLE (teclado) ─────────────────────────────────────────────── */
+:focus-visible {
+    outline: 3px solid rgba(99, 179, 237, .65);
+    outline-offset: 2px;
+}
+
+/* ── TRANSICIONES DE PÁGINA (View Transitions API) ────────────────────────────
+   Mejora progresiva: en navegadores compatibles hace un cross-fade suave al
+   navegar entre páginas. En el resto, no hace nada (no rompe la navegación). */
+@view-transition { navigation: auto; }
+
+/* ==========================================================================
+   ████  REDISEÑO 2026 — FASE 4: DETALLE · CARRITO · FILTROS  ████
+   Añadido al final: no modifica reglas previas. Mismos tokens y paleta.
+   ========================================================================== */
+
+/* ── SIDEBAR DE FILTROS (glass) ───────────────────────────────────────────── */
+.sidebar-filters {
+    background: rgba(255, 255, 255, .82);
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+}
+.filter-group h3 { border-bottom: 2px solid var(--accent-cyan); }
+
+/* ── ITEMS DEL CARRITO ────────────────────────────────────────────────────── */
+.cart-item {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    transition: transform var(--t-fast) var(--ease-out),
+                box-shadow var(--t-fast) var(--ease-out);
+}
+.cart-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+}
+.cart-qty-box { border-radius: var(--radius-pill); }
+
+/* ── BOTÓN DE CHECKOUT (sin tocar su color: lo maneja el JS) ───────────────── */
+.btn-checkout {
+    border-radius: var(--radius-sm);
+    position: relative;
+    overflow: hidden;
+}
+.btn-checkout::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -120%;
+    width: 55%; height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.45), transparent);
+    transform: skewX(-20deg);
+    transition: left var(--t-slow) var(--ease-out);
+    pointer-events: none;
+}
+.btn-checkout:hover::after { left: 150%; }
+.btn-checkout:active { transform: scale(.985); }
+
+/* ── TARJETA DE DETALLE ───────────────────────────────────────────────────── */
+.product-detail-card {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card-hover);
+}
+.detail-left {
+    background: linear-gradient(135deg, #ffffff 0%, var(--grey-bg) 100%);
+}
+.main-image-container img {
+    transition: transform var(--t-base) var(--ease-spring);
+}
+.product-detail-card:hover .main-image-container img {
+    transform: scale(1.04);
+}
+
+/* ==========================================================================
+   ████  REDISEÑO 2026 — FASE 7: HERO PANTALLA COMPLETA + BARRA TRANSPARENTE  ████
+   Una sola barra (logo + nav + buscador + acciones) transparente SOBRE el hero
+   a pantalla completa. Solo afecta index.html (.home-shell).
+   ========================================================================== */
+
+/* Ocultamos la cinta oscura: la barra va integrada sobre el hero */
+.home-shell .top-bar { display: none; }
+
+/* ── HERO A PANTALLA COMPLETA ─────────────────────────────────────────────── */
+.home-shell .hero-banner {
+    min-height: 100vh;
+    height: auto;
+    margin-bottom: 0;
+    border-radius: 0;
+    padding-top: 86px;     /* lugar para la barra transparente de arriba */
+}
+
+/* ── BARRA INTEGRADA (logo + nav + buscador + acciones) ───────────────────────
+   Fija arriba. Transparente sobre el hero; se vuelve SÓLIDA (.solid, la agrega
+   el JS) cuando se terminó de scrollear todo el hero. */
+.site-nav {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    z-index: 1100;
+    background: transparent;
+    transition: background var(--t-base) ease, box-shadow var(--t-base) ease;
+}
+
+/* Estado SÓLIDO (después del hero): fondo claro + contenido oscuro */
+.site-nav.solid {
+    background: rgba(255, 255, 255, .92);
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+    box-shadow: var(--shadow-card);
+}
+.site-nav.solid .main-nav a { color: var(--text-dark); }
+.site-nav.solid .main-nav a:hover { color: var(--primary-blue); }
+.site-nav.solid .main-nav a::after { background-color: var(--primary-blue); }
+.site-nav.solid .search-bar { background: #fff; border-color: var(--border-color); }
+.site-nav.solid .search-bar input { color: var(--text-dark); }
+.site-nav.solid .search-bar input::placeholder { color: var(--text-light); }
+.site-nav.solid .search-bar .search-btn { background: var(--primary-blue); color: #fff; }
+.site-nav.solid .btn-outline { border-color: var(--primary-blue); color: var(--primary-blue); }
+.site-nav.solid .btn-outline:hover { background: var(--primary-blue); color: #fff; }
+.site-nav.solid .cart-icon,
+.site-nav.solid .mobile-user-icon { color: var(--primary-dark); }
+.site-nav.solid .menu-toggle { color: var(--primary-dark) !important; }
+
+/* Que los anclas (#ofertas, #nosotros) no queden tapados por la barra fija */
+.home-shell section[id] { scroll-margin-top: 90px; }
+.site-nav-inner {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    min-height: 72px;
+    padding: 10px 0;
+}
+.site-nav .logo { flex-shrink: 0; }
+.site-nav .logo img { max-height: 50px; width: auto; }
+
+/* Links en blanco (contraste sobre el hero oscuro) */
+.site-nav .main-nav { margin: 0; flex-shrink: 0; }
+.site-nav .main-nav ul { gap: 26px; }
+.site-nav .main-nav a { color: #fff; }
+.site-nav .main-nav a:hover { color: var(--accent-cyan); }
+.site-nav .main-nav a::after { background-color: var(--accent-cyan); }
+
+/* Buscador translúcido (glass) sobre el hero.
+   En desktop crece para llenar el centro de la barra (con tope), no queda chico. */
+.site-nav .search-container { margin: 0 24px; flex: 1 1 auto; max-width: 460px; }
+.site-nav .search-bar {
+    height: 43px;
+    background: rgba(255, 255, 255, .14);
+    border-color: rgba(255, 255, 255, .35);
+    box-shadow: none;
+}
+.site-nav .search-bar input { background: transparent; color: #fff; }
+.site-nav .search-bar input::placeholder { color: rgba(255, 255, 255, .75); }
+.site-nav .search-bar .search-btn { background: rgba(255, 255, 255, .22); color: #fff; }
+.site-nav .search-bar .search-btn:hover { background: rgba(255, 255, 255, .35); }
+
+/* Lupita un poco más grande SOLO en desktop (no afecta el celular) */
+@media (min-width: 769px) {
+    .site-nav .search-bar .search-btn { padding: 0 18px; font-size: 1.7rem; }
+}
+
+/* Acciones en blanco */
+.site-nav .user-actions { flex-shrink: 0; }
+.site-nav .btn-outline { border-color: rgba(255, 255, 255, .6); color: #fff; background: transparent; }
+.site-nav .btn-outline:hover { background: #fff; color: var(--primary-dark); }
+.site-nav .cart-icon,
+.site-nav .mobile-user-icon { color: #fff; }
+
+/* ── HERO: triángulos CSS animados de fondo ───────────────────────────────── */
+.hero-deco { position: absolute; inset: 0; overflow: hidden; z-index: 1; pointer-events: none; }
+.tri { position: absolute; width: 0; height: 0; border-style: solid; opacity: .5; }
+.tri-1 { border-width: 0 26px 44px 26px; border-color: transparent transparent rgba(99,179,237,.40) transparent; top: 18%; left: 12%;  animation: triFloat 11s ease-in-out infinite; }
+.tri-2 { border-width: 0 18px 30px 18px; border-color: transparent transparent rgba(255,255,255,.22) transparent; top: 60%; left: 22%; animation: triFloat 9s  ease-in-out infinite reverse; }
+.tri-3 { border-width: 0 34px 58px 34px; border-color: transparent transparent rgba(49,130,206,.35) transparent;  top: 22%; right: 14%; animation: triFloat 13s ease-in-out infinite; }
+.tri-4 { border-width: 0 14px 24px 14px; border-color: transparent transparent rgba(255,255,255,.18) transparent; bottom: 18%; right: 26%; animation: triFloat 8s  ease-in-out infinite reverse; }
+@keyframes triFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50%      { transform: translateY(-24px) rotate(180deg); }
+}
+
+/* ── HERO: contenido extra (eyebrow, doble CTA, chips) ────────────────────── */
+.hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin: 0 auto 18px;
+    padding: 7px 14px;
+    border-radius: var(--radius-pill);
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.28);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    color: #fff; font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    animation: heroUp .8s var(--ease-spring) backwards;
+}
+.hero-eyebrow .material-icons { font-size: 1rem; color: var(--accent-cyan); }
+
+.hero-actions {
+    display: flex; flex-wrap: wrap; gap: 14px; justify-content: center;
+    animation: heroUp .8s var(--ease-spring) .3s backwards;
+}
+.hero-content .btn-hero { animation: none; }   /* la entrada la hace .hero-actions */
+.btn-hero-outline {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 28px; border-radius: var(--radius-pill);
+    color: #fff; font-weight: 700; font-size: 1rem;
+    border: 1.5px solid rgba(255,255,255,.5);
+    background: rgba(255,255,255,.08);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    transition: background var(--t-base) ease, transform var(--t-base) var(--ease-spring), border-color var(--t-base) ease;
+}
+.btn-hero-outline:hover { background: rgba(255,255,255,.18); border-color: #fff; color: #fff; transform: translateY(-3px); }
+
+.hero-chips {
+    display: flex; flex-wrap: wrap; gap: 14px 26px; justify-content: center;
+    margin-top: 28px;
+    animation: heroUp .8s var(--ease-spring) .45s backwards;
+}
+.hero-chips span { display: inline-flex; align-items: center; gap: 7px; color: rgba(255,255,255,.88); font-size: .85rem; font-weight: 600; }
+.hero-chips .material-icons { font-size: 1.05rem; color: var(--accent-cyan); }
+
+/* ── RESPONSIVE (móvil) ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    /* Barra transparente: logo a la izq, hamburguesa + acciones a la der,
+       buscador a ancho completo en una 2ª fila. */
+    .site-nav-inner { gap: 10px; min-height: 60px; flex-wrap: wrap; padding: 8px 0; }
+    .site-nav .logo { order: 1 !important; margin-right: auto !important; flex-grow: 0 !important; justify-content: flex-start !important; }
+    .site-nav .logo img { max-height: 40px; }
+    .site-nav .menu-toggle { order: 2 !important; color: #fff !important; }
+    .site-nav .user-actions { order: 3 !important; margin-left: 0 !important; }
+    .site-nav .search-container { order: 4 !important; flex: 1 1 100%; max-width: none; width: auto !important; margin: 6px 0 0 !important; }
+    /* Al volverse sólida (scrolleada), compactamos la barra ocultando el buscador */
+    .site-nav.solid .search-container { display: none; }
+    /* El dropdown de links tiene fondo blanco → textos oscuros */
+    .site-nav .main-nav a { color: var(--primary-dark); }
+
+    /* Hero a pantalla completa en celular (el min-height:100vh base manda).
+       El padding-top despeja la barra fija (logo + buscador en 2 filas). */
+    .home-shell .hero-banner { padding: 80px 18px 48px !important; }
+    .hero-content p { display: block !important; font-size: .98rem; }
+    .hero-actions .btn-hero,
+    .hero-actions .btn-hero-outline { flex: 1 1 auto; justify-content: center; text-align: center; }
+    .hero-chips { gap: 10px 16px; margin-top: 20px; }
+    .hero-chips span { font-size: .78rem; }
+    body:not(.home-shell) { padding-top: 60px; }
+}
+
+/* ── Páginas sin hero: .site-nav siempre sólida ── */
+body:not(.home-shell) { padding-top: 72px; }
+body:not(.home-shell) .site-nav {
+    background: rgba(255,255,255,.97);
+    box-shadow: 0 2px 20px rgba(0,0,0,.10);
+}
+body:not(.home-shell) .site-nav .main-nav a { color: var(--text-dark); }
+body:not(.home-shell) .site-nav .main-nav a:hover { color: var(--primary-blue); }
+body:not(.home-shell) .site-nav .main-nav a::after { background-color: var(--primary-blue); }
+body:not(.home-shell) .site-nav .search-bar { background: #fff; border-color: var(--border-color); }
+body:not(.home-shell) .site-nav .search-bar input { color: var(--text-dark); }
+body:not(.home-shell) .site-nav .search-bar input::placeholder { color: var(--text-light); }
+body:not(.home-shell) .site-nav .search-bar .search-btn { background: var(--primary-blue); color: #fff; }
+body:not(.home-shell) .site-nav .btn-outline { border-color: var(--primary-blue); color: var(--primary-blue); }
+body:not(.home-shell) .site-nav .btn-outline:hover { background: var(--primary-blue); color: #fff; }
+body:not(.home-shell) .site-nav .cart-icon,
+body:not(.home-shell) .site-nav .mobile-user-icon { color: var(--primary-dark); }
+body:not(.home-shell) .site-nav .menu-toggle { color: var(--primary-dark) !important; }
+
+/* ==========================================================================
+   ████  FASE 8 — NAV MÓVIL LIMPIO: logo + hamburguesa + buscador  ████
+   El carrito y la cuenta salen de la barra. Solo responsive; desktop intacto.
+   ========================================================================== */
+
+/* Íconos del menú: visibles SOLO en el desplegable móvil (desktop sin cambios) */
+.site-nav .main-nav a .material-icons { display: none; }
+/* Ítem "Cuenta" del menú: oculto en desktop (ahí ya está el botón CUENTA) */
+.nav-account-item { display: none; }
+
+@media (max-width: 768px) {
+    /* ── La cuenta y el botón CUENTA salen de la barra (van al menú) ── */
+    .site-nav .user-actions .mobile-user-icon,
+    .site-nav .user-actions .btn-outline { display: none !important; }
+
+    /* Buscador SIEMPRE visible, incluso con .solid al scrollear */
+    .site-nav .search-container,
+    .site-nav.solid .search-container { display: block !important; }
+
+    /* ── TODO en UNA sola línea: logo + buscador + hamburguesa ── */
+    .site-nav-inner { flex-wrap: nowrap !important; gap: 10px !important; }
+    .site-nav .logo { order: 1 !important; margin: 0 !important; flex: 0 0 auto !important; }
+    .site-nav .logo img { max-height: 38px; }
+    .site-nav .search-container {
+        order: 2 !important;
+        flex: 1 1 auto !important;
+        width: auto !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+    }
+    .site-nav .menu-toggle { order: 3 !important; margin: 0 !important; flex: 0 0 auto !important; }
+    .site-nav .user-actions { order: 4 !important; }
+
+    /* ── Menú hamburguesa: ítems con ícono, alineados a la izquierda ── */
+    /* Quita la línea blanca (#eee) que dejaba el borde superior del desplegable
+       cerrado, pegada al borde inferior del nav. */
+    .site-nav .main-nav { border-top: none; }
+    .site-nav .main-nav ul { text-align: left; gap: 2px; padding: 10px 0; }
+    .site-nav .main-nav a {
+        display: flex; align-items: center; gap: 14px;
+        justify-content: flex-start;
+        padding: 14px 26px;
+    }
+    .site-nav .main-nav a .material-icons {
+        display: inline-flex; font-size: 1.35rem; color: var(--primary-blue);
+    }
+    .nav-account-item { display: block; }
+
+    /* ── Carrito: SALE del nav. Se usa ÚNICAMENTE el FAB oficial #cart-fab
+       (abajo-derecha, 54px, mismo tamaño siempre) → sin duplicados. ── */
+    .site-nav .cart-icon { display: none !important; }  /* carrito fuera de la barra */
+    .cart-fab { display: flex !important; }             /* siempre visible en celular, no solo con ítems */
+
+    /* En detalle.html, subir el FAB por encima de la barra "Agregar al carrito" */
+    body:has(.detail-actions) .cart-fab { bottom: 84px; }
+
+    /* ── Tamaños: que el título no quede tapado por el nav fijo (1 fila).
+       Lleva !important porque hay un `body { padding: 0 !important }` (línea ~3513)
+       que de otro modo anula este padding-top. ── */
+    body:not(.home-shell) { padding-top: 72px !important; }
+    #titulo-catalogo { font-size: 1.5rem; line-height: 1.2; }
 }
